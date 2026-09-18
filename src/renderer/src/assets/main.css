@@ -1,0 +1,87 @@
+@import "tailwindcss";
+
+body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    overflow: hidden;
+    background-color: #f3f4f6;
+}
+
+/* Scrollbar estilo macOS */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* Animações e Utilitários */
+.tree-caret { transition: transform 0.15s ease; }
+.tree-caret.collapsed { transform: rotate(-90deg); }
+.modal-backdrop { background-color: rgba(15,23,42,0.6); }
+
+[contenteditable] ul { list-style: disc; margin: 0 0 8px 22px; padding: 0; }
+[contenteditable] ol { list-style: decimal; margin: 0 0 8px 22px; padding: 0; }
+[contenteditable] li { margin-bottom: 2px; }
+
+.report-editor, [contenteditable] {
+  white-space: pre-wrap;
+  tab-size: 4;
+  -moz-tab-size: 4;
+}
+
+@media print {
+  html, body {
+    height: auto !important;
+    overflow: visible !important;
+    background: white !important;
+  }
+
+  @page {
+    size: A4;
+    margin: 15mm 20mm; /* 1.5cm no topo/fundo e 2.0cm nas laterais */
+  }
+
+  /* ===== PRINT TABLE HACK ===== */
+  /* A folha vira uma "tabela": cabeçalho e rodapé repetem-se
+     automaticamente em todas as páginas geradas pelo Chromium. */
+
+  .folha-a4 {
+    display: table !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .folha-a4-header {
+    display: table-header-group !important;
+  }
+
+  .folha-a4-body {
+    display: table-row-group !important;
+  }
+
+  /* Espaçador invisível: ocupa o lugar do rodapé real dentro do
+     fluxo da tabela, para o texto nunca bater na área do rodapé
+     antes da quebra de página. Altura deve bater certo com a
+     altura real do rodapé (ajusta o h-[Xmm] no JSX se necessário). */
+  .folha-a4-footer-spacer {
+    display: table-footer-group !important;
+  }
+
+  /* Rodapé real: fixo, repete fisicamente no fundo de cada página. */
+  .folha-a4-footer-real {
+    position: fixed !important;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin-top: 0 !important;
+  }
+
+  /* Protege os parágrafos de serem cortados a meio da linha na quebra de página */
+  [contenteditable] p,
+  [contenteditable] li {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+}
