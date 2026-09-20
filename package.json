@@ -21,7 +21,8 @@
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.2",
     "@electron-toolkit/utils": "^4.0.0",
-    "better-sqlite3": "^13.0.3"
+    "better-sqlite3": "^13.0.3",
+    "pagedjs": "^0.4.3"
   },
   "devDependencies": {
     "@electron-toolkit/eslint-config": "^2.1.0",

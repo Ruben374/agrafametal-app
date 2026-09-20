@@ -1,0 +1,112 @@
+@page {
+  size: A4;
+  margin: 40mm 20mm 45mm 20mm; /* topo/fundo maiores para dar espaço ao header/footer */
+
+  @top-center {
+    content: element(cabecalho-relatorio);
+  }
+  @bottom-center {
+    content: element(rodape-relatorio);
+  }
+}
+
+.pagedjs-cabecalho {
+  position: running(cabecalho-relatorio);
+}
+.pagedjs-rodape {
+  position: running(rodape-relatorio);
+}
+
+
+/* =========================================================
+   ESTILOS DO CABEÇALHO (PAGED.JS)
+========================================================= */
+.cabecalho-topo {
+  text-align: center;
+  font-family: sans-serif;
+  margin-bottom: 20px;
+}
+
+.cabecalho-topo h1 {
+  font-size: 24px;
+  font-weight: 800;
+  color: #111827;
+  margin: 0 0 4px 0;
+}
+
+.cabecalho-subtitulo {
+  font-size: 11px;
+  font-weight: 600;
+  color: #4b5563;
+  margin: 0 0 15px 0;
+}
+
+.cabecalho-titulo {
+  font-size: 18px;
+  font-weight: bold;
+  color: #1e3a8a;
+  text-transform: uppercase;
+  margin: 0;
+  border-bottom: 1px dashed #d1d5db;
+  padding-bottom: 4px;
+  margin-bottom: 8px;
+}
+
+.cabecalho-data {
+  font-size: 10px;
+  color: #9ca3af;
+  margin: 0;
+}
+
+/* =========================================================
+   ESTILOS DO CORPO
+========================================================= */
+.corpo-relatorio {
+  font-family: sans-serif;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #1f2937;
+}
+
+/* =========================================================
+   ESTILOS DO RODAPÉ (PAGED.JS)
+========================================================= */
+.rodape-moradas {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  font-weight: bold;
+  color: #1f2937;
+  padding-top: 15px;
+  border-top: 2px solid #1f2937;
+  font-family: sans-serif;
+}
+
+.rodape-coluna {
+  width: 50%;
+  text-align: left;
+}
+
+.rodape-coluna-direita {
+  text-align: right;
+}
+
+.rodape-label {
+  font-style: italic;
+  font-size: 11px;
+  color: #6b7280;
+  margin: 0 0 4px 0;
+}
+
+.rodape-coluna p {
+  margin: 0;
+}
+
+.rodape-legal {
+  font-size: 8px;
+  text-align: justify;
+  color: #6b7280;
+  line-height: 1.2;
+  margin-top: 10px;
+  font-family: sans-serif;
+}
