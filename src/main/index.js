@@ -165,6 +165,31 @@ function registarAPI() {
     return true
   })
 
+  // Atualiza um único campo da chapa (lista fechada de colunas -> sem SQL injection)
+  const CAMPOS_MAQUINA = [
+    'nome',
+    'marca',
+    'modelo',
+    'serial',
+    'ano_fab',
+    'elet_v',
+    'elet_hz',
+    'elet_kw',
+    'pneu_kgcm2',
+    'hidr_kgcm2',
+    'hidr_lh',
+    'estado',
+    'notas_tecnicas'
+  ]
+  ipcMain.handle('db:updateCampoMaquina', (event, id, campo, valor) => {
+    if (!CAMPOS_MAQUINA.includes(campo)) throw new Error('Campo inválido: ' + campo)
+    if (campo === 'nome' && !String(valor ?? '').trim()) {
+      throw new Error('Nome da máquina não pode estar vazio')
+    }
+    db.prepare(`UPDATE maquinas SET ${campo} = ? WHERE id = ?`).run(valor ?? null, id)
+    return true
+  })
+
   ipcMain.handle('db:deleteMaquina', (event, id) => {
     db.prepare('DELETE FROM maquinas WHERE id = ?').run(id)
     return true
@@ -229,9 +254,16 @@ function registarAPI() {
 
   // NOVA: Exportação Nativa para PDF
   ipcMain.handle('app:exportarPDF', async (event, tituloSugerido) => {
+    // Remove caracteres proibidos em nomes de ficheiro no Windows (ex.: "/" num título)
+    const nomeFicheiro =
+      String(tituloSugerido || 'relatorio')
+        .replace(/[\\/:*?"<>|]+/g, '-')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, 120) || 'relatorio'
     const { canceled, filePath } = await dialog.showSaveDialog({
       title: 'Exportar Relatório em PDF',
-      defaultPath: `${tituloSugerido || 'relatorio'}.pdf`,
+      defaultPath: `${nomeFicheiro}.pdf`,
       filters: [{ name: 'PDF', extensions: ['pdf'] }]
     })
 
@@ -253,6 +285,8 @@ function createWindow() {
   const mainWindow = new BrowserWindow({
     width: 1280,
     height: 800,
+    minWidth: 800, // abaixo disto a folha A4 e a chapa deixam de caber
+    minHeight: 560,
     show: false,
     autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon } : {}),

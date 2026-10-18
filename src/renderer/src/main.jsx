@@ -1,3 +1,4 @@
+import '@fortawesome/fontawesome-free/css/all.min.css' // ícones locais (funciona sem internet)
 import './assets/main.css'
 
 import { StrictMode } from 'react'

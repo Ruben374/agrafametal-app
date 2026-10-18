@@ -1,34 +1,62 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 body {
-    font-family: 'Segoe UI', system-ui, sans-serif;
-    overflow: hidden;
-    background-color: #f3f4f6;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  overflow: hidden;
+  background-color: #f3f4f6;
 }
 
 /* Scrollbar estilo macOS */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
-::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
 
 /* Animações e Utilitários */
-.tree-caret { transition: transform 0.15s ease; }
-.tree-caret.collapsed { transform: rotate(-90deg); }
-.modal-backdrop { background-color: rgba(15,23,42,0.6); }
+.tree-caret {
+  transition: transform 0.15s ease;
+}
+.tree-caret.collapsed {
+  transform: rotate(-90deg);
+}
+.modal-backdrop {
+  background-color: rgba(15, 23, 42, 0.6);
+}
 
-[contenteditable] ul { list-style: disc; margin: 0 0 8px 22px; padding: 0; }
-[contenteditable] ol { list-style: decimal; margin: 0 0 8px 22px; padding: 0; }
-[contenteditable] li { margin-bottom: 2px; }
+[contenteditable] ul {
+  list-style: disc;
+  margin: 0 0 8px 22px;
+  padding: 0;
+}
+[contenteditable] ol {
+  list-style: decimal;
+  margin: 0 0 8px 22px;
+  padding: 0;
+}
+[contenteditable] li {
+  margin-bottom: 2px;
+}
 
-.report-editor, [contenteditable] {
+.report-editor,
+[contenteditable] {
   white-space: pre-wrap;
   tab-size: 4;
   -moz-tab-size: 4;
 }
 
 @media print {
-  html, body {
+  html,
+  body {
     height: auto !important;
     overflow: visible !important;
     background: white !important;
@@ -43,14 +71,30 @@ body {
   /* A folha vira uma "tabela": cabeçalho e rodapé repetem-se
      automaticamente em todas as páginas geradas pelo Chromium. */
 
-  .folha-a4 {
-    display: table !important;
+  /* A "folha" deixa de ser um cartão com sombra e padding */
+  .folha-a4-pagina {
+    display: block !important;
     width: 100% !important;
-    height: auto !important;
+    max-width: none !important;
     min-height: 0 !important;
     margin: 0 !important;
     padding: 0 !important;
     box-shadow: none !important;
+  }
+
+  /* <table> real: o Chromium repete thead/tfoot em cada página */
+  .folha-a4 {
+    display: table !important;
+    width: 100% !important;
+  }
+
+  .folha-a4 tr {
+    display: table-row !important;
+  }
+
+  .folha-a4 td {
+    display: table-cell !important;
+    min-height: 0 !important;
   }
 
   .folha-a4-header {

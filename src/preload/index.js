@@ -15,6 +15,8 @@ const api = {
   // Máquinas
   addMaquina: (empresaId, nome) => ipcRenderer.invoke('db:addMaquina', empresaId, nome),
   updateMaquina: (id, dados) => ipcRenderer.invoke('db:updateMaquina', id, dados),
+  updateCampoMaquina: (id, campo, valor) =>
+    ipcRenderer.invoke('db:updateCampoMaquina', id, campo, valor),
   deleteMaquina: (id) => ipcRenderer.invoke('db:deleteMaquina', id),
 
   // Relatórios
