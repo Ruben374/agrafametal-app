@@ -1,25 +1,87 @@
 @import 'tailwindcss';
 
-body {
-  font-family: 'Segoe UI', system-ui, sans-serif;
-  overflow: hidden;
-  background-color: #f3f4f6;
+/* ===================== IDENTIDADE VISUAL =====================
+   Todas as cores da app vêm daqui (tokens do Tailwind):
+   - brand   : azul-aço / marinho (cor principal)
+   - slate   : cinzentos frios do Tailwind (superfícies, texto, bordas)
+   - accent  : âmbar (destaques)
+   - ok / warn / danger : estados (sucesso, aviso, ações destrutivas)
+   Para mudar a paleta basta alterar os valores abaixo. */
+@theme {
+  --font-sans: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+
+  --color-brand-50: #eef3f8;
+  --color-brand-100: #d9e3ee;
+  --color-brand-200: #b5c8dc;
+  --color-brand-300: #88a6c4;
+  --color-brand-400: #5a82a8;
+  --color-brand-500: #3d668e;
+  --color-brand-600: #2e5276;
+  --color-brand-700: #244262;
+  --color-brand-800: #1c3450;
+  --color-brand-900: #142740;
+  --color-brand-950: #0c1a2c;
+
+  --color-accent-50: #fff8eb;
+  --color-accent-100: #feedc7;
+  --color-accent-200: #fdd889;
+  --color-accent-300: #fcc04b;
+  --color-accent-400: #f6a623;
+  --color-accent-500: #e08a0b;
+  --color-accent-600: #b86a06;
+  --color-accent-700: #92500a;
+
+  --color-ok-50: #ecf8f1;
+  --color-ok-400: #4cc184;
+  --color-ok-600: #1f8a4c;
+  --color-ok-700: #186e3c;
+
+  --color-warn-50: #fff7e6;
+  --color-warn-600: #b45309;
+
+  --color-danger-50: #fdf0f0;
+  --color-danger-100: #fbdcdc;
+  --color-danger-500: #dc3a3a;
+  --color-danger-600: #c62828;
+  --color-danger-700: #a31f1f;
 }
 
-/* Scrollbar estilo macOS */
+html {
+  font-size: 16px;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-feature-settings:
+    'cv11' 1,
+    'ss01' 1; /* Inter: "a" e números mais legíveis */
+  overflow: hidden;
+  background-color: var(--color-slate-100);
+  color: var(--color-slate-800);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Foco visível ao navegar com o teclado */
+:focus-visible {
+  outline: 2px solid var(--color-brand-500);
+  outline-offset: 2px;
+}
+
+/* Scrollbar discreta */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 ::-webkit-scrollbar-track {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
+  background: var(--color-slate-300);
   border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
+  background: var(--color-slate-400);
 }
 
 /* Animações e Utilitários */
@@ -30,7 +92,21 @@ body {
   transform: rotate(-90deg);
 }
 .modal-backdrop {
-  background-color: rgba(15, 23, 42, 0.6);
+  background-color: rgb(12 26 44 / 0.6); /* brand-950 a 60% */
+}
+
+@keyframes entrar {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.animar-entrada {
+  animation: entrar 0.18s ease-out;
 }
 
 [contenteditable] ul {

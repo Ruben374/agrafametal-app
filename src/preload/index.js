@@ -24,8 +24,14 @@ const api = {
   saveRelatorio: (maquinaId, dados) => ipcRenderer.invoke('db:saveRelatorio', maquinaId, dados),
   deleteRelatorio: (id) => ipcRenderer.invoke('db:deleteRelatorio', id),
 
-  // Sistema
+  // Cópias de segurança
   fazerBackup: () => ipcRenderer.invoke('app:backup'),
+  escolherRestauro: () => ipcRenderer.invoke('app:escolherRestauro'),
+  restaurarBackup: (caminho) => ipcRenderer.invoke('app:restaurar', caminho),
+
+  // Sistema
+  getAppInfo: () => ipcRenderer.invoke('app:info'),
+  abrirPastaDados: () => ipcRenderer.invoke('app:abrirPastaDados'),
   exportarPDF: (tituloSugerido) => ipcRenderer.invoke('app:exportarPDF', tituloSugerido)
 }
 
