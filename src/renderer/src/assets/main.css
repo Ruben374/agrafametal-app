@@ -109,17 +109,26 @@ body {
   animation: entrar 0.18s ease-out;
 }
 
-[contenteditable] ul {
+/* Folha A4: mantém o tipo de letra original (não usa a Inter do resto da app) */
+.folha-original {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-feature-settings: normal;
+}
+
+[contenteditable] ul,
+.report-editor ul {
   list-style: disc;
   margin: 0 0 8px 22px;
   padding: 0;
 }
-[contenteditable] ol {
+[contenteditable] ol,
+.report-editor ol {
   list-style: decimal;
   margin: 0 0 8px 22px;
   padding: 0;
 }
-[contenteditable] li {
+[contenteditable] li,
+.report-editor li {
   margin-bottom: 2px;
 }
 
@@ -200,7 +209,9 @@ body {
 
   /* Protege os parágrafos de serem cortados a meio da linha na quebra de página */
   [contenteditable] p,
-  [contenteditable] li {
+  [contenteditable] li,
+  .report-editor p,
+  .report-editor li {
     page-break-inside: avoid;
     break-inside: avoid;
   }

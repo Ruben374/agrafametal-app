@@ -1,6 +1,7 @@
 import { app, shell, BrowserWindow, ipcMain, dialog, screen } from 'electron'
 import { join, dirname, basename, resolve } from 'path'
 import { existsSync, mkdirSync, copyFileSync, writeFileSync, unlinkSync, renameSync } from 'fs'
+import { scryptSync, randomBytes, timingSafeEqual } from 'crypto'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import Database from 'better-sqlite3'
@@ -11,6 +12,109 @@ let dadosDir
 let modoDados // 'portatil' | 'instalado' | 'desenvolvimento'
 
 const TABELAS_OBRIGATORIAS = ['config', 'empresas', 'maquinas', 'relatorios']
+
+/* ================= SENHA =================
+   Protege as alterações e eliminações (criar não precisa de senha).
+   - Só se guarda um hash (scrypt + sal aleatório) na tabela config, nunca a senha.
+   - A senha por defeito vem aqui já em hash (não está escrita em texto simples).
+   - Reset: um ficheiro REPOR_SENHA (ou REPOR_SENHA.txt) na pasta de dados faz voltar
+     à senha por defeito no arranque seguinte; o ficheiro é apagado a seguir.
+   - Toda a verificação é feita aqui, no processo principal: a interface não decide nada. */
+const SENHA_PADRAO_HASH =
+  'scrypt$189b9652b9161c0d7d83d68749f6dd69$5c1a9051c3704e810cadd907efc9de5dc02ead5da4c58bf934318efc83adb620bef8c86f99bca38ad6b84f8ddbb0243974d22a7ba2c25ef90cbd8d5fcf9c13a2'
+const FICHEIROS_RESET = ['REPOR_SENHA', 'REPOR_SENHA.txt']
+const MAX_TENTATIVAS = 5
+const BLOQUEIO_MS = 30_000
+
+let tentativasFalhadas = 0
+let bloqueadoAte = 0
+// Desbloqueios ativos: só a chapa da máquina X / o registo Y podem ser alterados
+const desbloqueios = { maquina: null, relatorio: null }
+
+function gerarHash(senha) {
+  const sal = randomBytes(16).toString('hex')
+  return `scrypt$${sal}$${scryptSync(String(senha), sal, 64).toString('hex')}`
+}
+
+function hashCorresponde(senha, guardado) {
+  const [tipo, sal, hash] = String(guardado || '').split('$')
+  if (tipo !== 'scrypt' || !sal || !hash) return false
+  const esperado = Buffer.from(hash, 'hex')
+  const calculado = scryptSync(String(senha ?? ''), sal, esperado.length)
+  return calculado.length === esperado.length && timingSafeEqual(calculado, esperado)
+}
+
+function gravarHashSenha(hash) {
+  db.prepare(
+    'INSERT INTO config (chave, valor) VALUES (?, ?) ON CONFLICT(chave) DO UPDATE SET valor = excluded.valor'
+  ).run('senha_hash', hash)
+}
+
+// 1.ª execução: senha por defeito. Ficheiro REPOR_SENHA: volta à senha por defeito.
+function prepararSenha() {
+  const reset = FICHEIROS_RESET.map((n) => join(dadosDir, n)).filter((f) => existsSync(f))
+  if (reset.length) {
+    gravarHashSenha(SENHA_PADRAO_HASH)
+    reset.forEach((f) => {
+      try {
+        unlinkSync(f)
+      } catch {
+        // se não der para apagar, o reset repete-se no próximo arranque (sem perigo)
+      }
+    })
+  } else if (!lerConfig('senha_hash')) {
+    gravarHashSenha(SENHA_PADRAO_HASH)
+  }
+}
+
+// Lança um erro com mensagem pronta a mostrar se a senha estiver errada
+function exigirSenha(senha) {
+  const agora = Date.now()
+  if (agora < bloqueadoAte) {
+    const s = Math.ceil((bloqueadoAte - agora) / 1000)
+    throw new Error(`Demasiadas tentativas erradas. Aguarde ${s} segundos e tente outra vez.`)
+  }
+  // pedido sem senha nenhuma: recusa, mas não conta como tentativa errada
+  if (senha == null || senha === '') throw new Error('Introduza a senha.')
+  if (hashCorresponde(senha, lerConfig('senha_hash'))) {
+    tentativasFalhadas = 0
+    return
+  }
+  tentativasFalhadas++
+  if (tentativasFalhadas >= MAX_TENTATIVAS) {
+    tentativasFalhadas = 0
+    bloqueadoAte = agora + BLOQUEIO_MS
+    throw new Error('Demasiadas tentativas erradas. Aguarde 30 segundos e tente outra vez.')
+  }
+  throw new Error('Senha incorreta.')
+}
+
+function exigirDesbloqueio(tipo, id) {
+  if (id == null || desbloqueios[tipo] !== Number(id)) {
+    throw new Error('Alteração não autorizada: carregue em «Editar» e introduza a senha.')
+  }
+}
+
+/* ================= DATAS ================= */
+const p2 = (n) => String(n).padStart(2, '0')
+// Data de hoje no fuso horário do PC (não em UTC)
+function hojeLocal() {
+  const d = new Date()
+  return `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}`
+}
+function validarDataRegisto(data) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(data ?? ''))
+  if (!m) throw new Error('Indique a data da intervenção.')
+  const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]))
+  if (
+    d.getFullYear() !== Number(m[1]) ||
+    d.getMonth() !== Number(m[2]) - 1 ||
+    d.getDate() !== Number(m[3])
+  ) {
+    throw new Error('A data da intervenção não é válida.')
+  }
+  if (data > hojeLocal()) throw new Error('A data da intervenção não pode ser no futuro.')
+}
 
 /* ================= LOCALIZAÇÃO DOS DADOS =================
    Mesma regra para o instalador e para a versão portátil:
@@ -56,10 +160,17 @@ function resolverPastaDados() {
 /* ================= BASE DE DADOS ================= */
 
 function abrirBD(caminho) {
-  const nova = new Database(caminho)
+  // timeout: se o ficheiro estiver momentaneamente ocupado, espera até 5 s em vez de falhar
+  const nova = new Database(caminho, { timeout: 5000 })
   // DELETE em vez de WAL: não cria ficheiros -wal/-shm ao lado da BD,
   // o que é mais seguro num disco externo que pode ser desligado.
-  nova.pragma('journal_mode = DELETE')
+  // Se outro programa tiver a BD aberta, a mudança não é possível agora:
+  // a app continua a funcionar e tenta outra vez na próxima abertura.
+  try {
+    nova.pragma('journal_mode = DELETE')
+  } catch (err) {
+    console.warn('Não foi possível mudar o journal_mode para DELETE:', err.message)
+  }
   nova.pragma('foreign_keys = ON')
 
   nova.exec(`
@@ -123,6 +234,7 @@ function initDB() {
     if (!existsSync(dadosDir)) mkdirSync(dadosDir, { recursive: true })
     dbPath = join(dadosDir, 'agrafametal.db')
     db = abrirBD(dbPath)
+    prepararSenha()
     return true
   } catch (err) {
     dialog.showErrorBox(
@@ -221,12 +333,17 @@ function registarAPI() {
     const rows = db.prepare('SELECT * FROM config').all()
     const configObj = {}
     rows.forEach((r) => {
-      configObj[r.chave] = r.valor
+      if (r.chave !== 'senha_hash') configObj[r.chave] = r.valor // o hash nunca sai daqui
     })
     return configObj
   })
 
-  ipcMain.handle('db:setConfig', (event, chave, valor) => {
+  // Chaves de estado (última máquina, pastas abertas...) são livres; o cabeçalho
+  // da folha precisa de senha; a senha só se muda por app:alterarSenha.
+  const CONFIG_PROTEGIDA = ['cabecalho_subtitulo']
+  ipcMain.handle('db:setConfig', (event, chave, valor, senha) => {
+    if (String(chave).startsWith('senha')) throw new Error('Chave reservada.')
+    if (CONFIG_PROTEGIDA.includes(chave)) exigirSenha(senha)
     db.prepare(
       'INSERT INTO config (chave, valor) VALUES (?, ?) ON CONFLICT(chave) DO UPDATE SET valor = excluded.valor'
     ).run(chave, valor)
@@ -250,7 +367,8 @@ function registarAPI() {
     return { id: info.lastInsertRowid, nome: nomeLimpo, maquinas: [] }
   })
 
-  ipcMain.handle('db:updateEmpresa', (event, id, nome) => {
+  ipcMain.handle('db:updateEmpresa', (event, id, nome, senha) => {
+    exigirSenha(senha)
     const nomeLimpo = String(nome ?? '').trim()
     if (!nomeLimpo) throw new Error('Nome da empresa não pode estar vazio')
     db.prepare('UPDATE empresas SET nome = ? WHERE id = ?').run(nomeLimpo, id)
@@ -258,7 +376,8 @@ function registarAPI() {
   })
 
   // Remove a empresa; as máquinas e os registos saem em cascata (ON DELETE CASCADE)
-  ipcMain.handle('db:deleteEmpresa', (event, id) => {
+  ipcMain.handle('db:deleteEmpresa', (event, id, senha) => {
+    exigirSenha(senha)
     db.prepare('DELETE FROM empresas WHERE id = ?').run(id)
     return true
   })
@@ -274,6 +393,7 @@ function registarAPI() {
   })
 
   ipcMain.handle('db:updateMaquina', (event, id, d) => {
+    exigirDesbloqueio('maquina', id)
     const stmt = db.prepare(`
       UPDATE maquinas SET
         nome=?, marca=?, modelo=?, serial=?, ano_fab=?,
@@ -318,6 +438,7 @@ function registarAPI() {
     'notas_tecnicas'
   ]
   ipcMain.handle('db:updateCampoMaquina', (event, id, campo, valor) => {
+    exigirDesbloqueio('maquina', id)
     if (!CAMPOS_MAQUINA.includes(campo)) throw new Error('Campo inválido: ' + campo)
     if (campo === 'nome' && !String(valor ?? '').trim()) {
       throw new Error('Nome da máquina não pode estar vazio')
@@ -326,7 +447,8 @@ function registarAPI() {
     return true
   })
 
-  ipcMain.handle('db:deleteMaquina', (event, id) => {
+  ipcMain.handle('db:deleteMaquina', (event, id, senha) => {
+    exigirSenha(senha)
     db.prepare('DELETE FROM maquinas WHERE id = ?').run(id)
     return true
   })
@@ -338,8 +460,11 @@ function registarAPI() {
       .all(maquinaId)
   })
 
+  // Registo novo: livre (só exige a data). Registo existente: só com desbloqueio.
   ipcMain.handle('db:saveRelatorio', (event, maquinaId, d) => {
+    validarDataRegisto(d.data)
     if (d.id) {
+      exigirDesbloqueio('relatorio', d.id)
       db.prepare(
         `UPDATE relatorios SET data=?, tecnico=?, tipo_manutencao=?, titulo=?, corpo=? WHERE id=?`
       ).run(
@@ -350,6 +475,7 @@ function registarAPI() {
         d.corpo ?? null,
         d.id
       )
+      desbloqueios.relatorio = null // guardado: volta a ficar protegido
       return d.id
     } else {
       const info = db
@@ -368,7 +494,8 @@ function registarAPI() {
     }
   })
 
-  ipcMain.handle('db:deleteRelatorio', (event, id) => {
+  ipcMain.handle('db:deleteRelatorio', (event, id, senha) => {
+    exigirSenha(senha)
     db.prepare('DELETE FROM relatorios WHERE id = ?').run(id)
     return true
   })
@@ -411,8 +538,11 @@ function registarAPI() {
   })
 
   // Passo 2 do restauro (depois de o utilizador confirmar)
-  ipcMain.handle('app:restaurar', async (event, caminho) => {
+  ipcMain.handle('app:restaurar', async (event, caminho, senha) => {
+    exigirSenha(senha)
     validarBD(caminho)
+    // a senha atual mantém-se (a da cópia antiga nunca volta a valer)
+    const hashAtual = lerConfig('senha_hash')
     // guarda primeiro os dados atuais, para se poder voltar atrás
     const copiaAnterior = join(pastaBackups(), `Antes_do_restauro_${carimbo()}.db`)
     await db.backup(copiaAnterior)
@@ -426,6 +556,10 @@ function registarAPI() {
       }
       renameSync(temporario, dbPath)
       db = abrirBD(dbPath)
+      if (hashAtual) gravarHashSenha(hashAtual)
+      else prepararSenha()
+      desbloqueios.maquina = null
+      desbloqueios.relatorio = null
     } catch (err) {
       // algo falhou: reabre a base de dados que estava em uso
       if (existsSync(temporario)) unlinkSync(temporario)
@@ -435,7 +569,41 @@ function registarAPI() {
     return { sucesso: true, copiaAnterior }
   })
 
-  // --- SISTEMA / PDF ---
+  // --- SENHA ---
+  // Desbloqueia a edição de uma máquina (chapa) ou de um registo existente
+  ipcMain.handle('auth:desbloquear', (event, tipo, id, senha) => {
+    if (!(tipo in desbloqueios)) throw new Error('Tipo inválido.')
+    exigirSenha(senha)
+    desbloqueios[tipo] = Number(id)
+    return true
+  })
+
+  ipcMain.handle('auth:bloquear', (event, tipo) => {
+    if (tipo in desbloqueios) desbloqueios[tipo] = null
+    return true
+  })
+
+  ipcMain.handle('auth:alterarSenha', (event, atual, nova) => {
+    exigirSenha(atual)
+    const s = String(nova ?? '')
+    if (s.length < 6) throw new Error('A nova senha tem de ter pelo menos 6 caracteres.')
+    gravarHashSenha(gerarHash(s))
+    return true
+  })
+
+  // --- SISTEMA / IMPRESSÃO / PDF ---
+  // Abre a janela de impressão do sistema (escolher impressora, cópias...)
+  ipcMain.handle(
+    'app:imprimir',
+    (event) =>
+      new Promise((resolver) => {
+        event.sender.print(
+          { silent: false, printBackground: true, pageSize: 'A4' },
+          (sucesso, motivo) => resolver({ sucesso, motivo: motivo || '' })
+        )
+      })
+  )
+
   ipcMain.handle('app:info', () => ({
     versao: app.getVersion(),
     pastaDados: dadosDir,
@@ -505,7 +673,6 @@ function createWindow() {
     minHeight: MIN_H,
     show: false,
     autoHideMenuBar: true,
-    backgroundColor: '#f5f7fa',
     ...(process.platform !== 'darwin' ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
@@ -533,6 +700,9 @@ function createWindow() {
 }
 
 /* ================= ARRANQUE ================= */
+
+// Interface em português de Portugal (ex.: calendário da data em dd/mm/aaaa em qualquer PC)
+app.commandLine.appendSwitch('lang', 'pt-PT')
 
 // Uma só instância: duas janelas a escrever na mesma base de dados não é seguro
 if (!app.requestSingleInstanceLock()) {

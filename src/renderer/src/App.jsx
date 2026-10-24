@@ -28,6 +28,18 @@ const normalizar = (texto) =>
     .toLowerCase()
     .trim()
 
+// Data de hoje no fuso horário do PC, no formato do <input type="date"> (AAAA-MM-DD)
+const hojeLocal = () => {
+  const d = new Date()
+  const p = (n) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
+}
+// AAAA-MM-DD -> DD-MM-AAAA
+const formatarData = (data) => (data ? data.split('-').reverse().join('-') : '—')
+// Tira o prefixo técnico que o Electron junta às mensagens de erro do processo principal
+const limparErro = (error) =>
+  String(error?.message ?? error).replace(/^Error invoking remote method '[^']+': (Error: )?/, '')
+
 const MODOS_DADOS = {
   portatil: 'Portátil — dados no disco',
   instalado: 'Instalado — dados neste computador',
@@ -51,7 +63,14 @@ const INPUT =
   Usa <input> controlado em vez de contentEditable: o Enter já não cria
   linhas novas e o React não se baralha com o texto escrito pelo utilizador.
 */
-function CampoChapa({ valor, onGuardar, className = '', placeholder = '—', ariaLabel }) {
+function CampoChapa({
+  valor,
+  onGuardar,
+  className = '',
+  placeholder = '—',
+  ariaLabel,
+  bloqueado = false
+}) {
   const [texto, setTexto] = useState(valor ?? '')
   const [valorOriginal, setValorOriginal] = useState(valor ?? '')
 
@@ -82,8 +101,10 @@ function CampoChapa({ valor, onGuardar, className = '', placeholder = '—', ari
       placeholder={placeholder}
       onChange={(e) => setTexto(e.target.value)}
       onKeyDown={handleKeyDown}
-      onBlur={(e) => onGuardar(e.currentTarget.value)}
-      className={`bg-transparent outline-none placeholder:text-slate-500 cursor-text tabular-nums ${className}`}
+      readOnly={bloqueado}
+      tabIndex={bloqueado ? -1 : 0}
+      onBlur={(e) => !bloqueado && onGuardar(e.currentTarget.value)}
+      className={`bg-transparent outline-none placeholder:text-slate-500 tabular-nums ${bloqueado ? 'cursor-default' : 'cursor-text'} ${className}`}
     />
   )
 }
@@ -155,7 +176,9 @@ function ModalNome({
   textoBotao,
   inputRef,
   onConfirmar,
-  onCancelar
+  onCancelar,
+  senha, // se vier definido, mostra o campo "Senha"
+  onChangeSenha
 }) {
   return (
     <div
@@ -185,6 +208,21 @@ function ModalNome({
           placeholder={placeholder}
           className={INPUT}
         />
+        {senha !== undefined && (
+          <>
+            <label className="block text-sm font-semibold text-slate-600 mt-4 mb-1.5">
+              <i className="fa-solid fa-lock mr-1.5 text-slate-400"></i>Senha
+            </label>
+            <input
+              type="password"
+              value={senha}
+              autoComplete="off"
+              onChange={(e) => onChangeSenha(e.target.value)}
+              aria-label="Senha"
+              className={INPUT}
+            />
+          </>
+        )}
         {erro && (
           <p className="text-danger-600 text-sm font-semibold mt-2">
             <i className="fa-solid fa-circle-exclamation mr-1.5"></i>
@@ -200,6 +238,269 @@ function ModalNome({
           </button>
         </div>
       </form>
+    </div>
+  )
+}
+
+/* Pede a senha antes de uma alteração/eliminação.
+   pedido = { titulo, mensagem, textoBotao, perigo, acao(senha) }
+   A ação é feita aqui dentro: se a senha estiver errada, o erro aparece no próprio
+   modal e o utilizador pode tentar outra vez. Enter confirma, Esc / clique fora cancela. */
+function ModalSenha({ pedido, onConcluir }) {
+  const [senha, setSenha] = useState('')
+  const [erro, setErro] = useState('')
+  const [aProcessar, setAProcessar] = useState(false)
+  const inputRef = useRef(null)
+
+  useEffect(() => {
+    setTimeout(() => inputRef.current?.focus(), 50)
+  }, [])
+
+  const confirmar = async () => {
+    if (aProcessar) return
+    if (!senha) {
+      setErro('Introduza a senha.')
+      inputRef.current?.focus()
+      return
+    }
+    setAProcessar(true)
+    try {
+      await pedido.acao(senha)
+      onConcluir(true)
+    } catch (error) {
+      setErro(limparErro(error))
+      setSenha('')
+      setAProcessar(false)
+      setTimeout(() => inputRef.current?.focus(), 0)
+    }
+  }
+
+  return (
+    <div
+      className="fixed inset-0 modal-backdrop z-[100] flex items-center justify-center p-4"
+      onKeyDown={(e) => e.key === 'Escape' && onConcluir(false)}
+      onMouseDown={(e) => e.target === e.currentTarget && onConcluir(false)}
+    >
+      <form
+        className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 animar-entrada"
+        role="alertdialog"
+        aria-modal="true"
+        onSubmit={(e) => {
+          e.preventDefault()
+          confirmar()
+        }}
+      >
+        <div className="flex gap-4">
+          <div
+            className={`shrink-0 w-11 h-11 rounded-full flex items-center justify-center ${pedido.perigo ? 'bg-danger-50 text-danger-600' : 'bg-brand-50 text-brand-700'}`}
+          >
+            <i
+              className={`fa-solid ${pedido.perigo ? 'fa-triangle-exclamation' : 'fa-lock'} text-lg`}
+            ></i>
+          </div>
+          <div className="min-w-0 flex-1">
+            <h3 className="text-lg font-bold text-slate-900 mb-1">{pedido.titulo}</h3>
+            <p className="text-base text-slate-700 whitespace-pre-line break-words">
+              {pedido.mensagem}
+            </p>
+            <label className="block text-sm font-semibold text-slate-600 mt-4 mb-1.5">Senha</label>
+            <input
+              ref={inputRef}
+              type="password"
+              value={senha}
+              autoComplete="off"
+              aria-label="Senha"
+              onChange={(e) => {
+                setSenha(e.target.value)
+                setErro('')
+              }}
+              className={INPUT}
+            />
+            {erro && (
+              <p role="alert" className="text-danger-600 text-sm font-semibold mt-2">
+                <i className="fa-solid fa-circle-exclamation mr-1.5"></i>
+                {erro}
+              </p>
+            )}
+          </div>
+        </div>
+        <div className="flex justify-end gap-2 mt-6">
+          <button type="button" onClick={() => onConcluir(false)} className={BTN_SECUNDARIO}>
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            disabled={aProcessar}
+            className={`${pedido.perigo ? BTN_PERIGO : BTN_PRIMARIO} disabled:opacity-60`}
+          >
+            {pedido.textoBotao || 'Confirmar'}
+          </button>
+        </div>
+      </form>
+    </div>
+  )
+}
+
+/* Alterar a senha: senha atual + nova senha (duas vezes) */
+function ModalAlterarSenha({ onFechar, onSucesso }) {
+  const [atual, setAtual] = useState('')
+  const [nova, setNova] = useState('')
+  const [confirmar, setConfirmar] = useState('')
+  const [erro, setErro] = useState('')
+  const atualRef = useRef(null)
+
+  useEffect(() => {
+    setTimeout(() => atualRef.current?.focus(), 50)
+  }, [])
+
+  const gravar = async () => {
+    if (!atual) return setErro('Introduza a senha atual.')
+    if (nova.length < 6) return setErro('A nova senha tem de ter pelo menos 6 caracteres.')
+    if (nova !== confirmar) return setErro('A confirmação não coincide com a nova senha.')
+    try {
+      await window.api.alterarSenha(atual, nova)
+      onSucesso()
+    } catch (error) {
+      setErro(limparErro(error))
+    }
+  }
+
+  const campo = (rotulo, valor, setValor, ref) => (
+    <>
+      <label className="block text-sm font-semibold text-slate-600 mt-4 mb-1.5">{rotulo}</label>
+      <input
+        ref={ref}
+        type="password"
+        value={valor}
+        autoComplete="off"
+        aria-label={rotulo}
+        onChange={(e) => {
+          setValor(e.target.value)
+          setErro('')
+        }}
+        className={INPUT}
+      />
+    </>
+  )
+
+  return (
+    <div
+      className="fixed inset-0 modal-backdrop z-[60] flex items-center justify-center p-4"
+      onKeyDown={(e) => e.key === 'Escape' && onFechar()}
+      onMouseDown={(e) => e.target === e.currentTarget && onFechar()}
+    >
+      <form
+        className="bg-white rounded-xl shadow-2xl w-full max-w-md p-6 animar-entrada"
+        role="dialog"
+        aria-modal="true"
+        onSubmit={(e) => {
+          e.preventDefault()
+          gravar()
+        }}
+      >
+        <h3 className="font-bold text-xl text-slate-900 flex items-center gap-2">
+          <i className="fa-solid fa-key text-brand-600"></i>Alterar senha
+        </h3>
+        <p className="text-sm text-slate-500 mt-1">
+          A senha é pedida para alterar ou apagar dados.
+        </p>
+        {campo('Senha atual', atual, setAtual, atualRef)}
+        {campo('Nova senha (mínimo 6 caracteres)', nova, setNova)}
+        {campo('Confirmar nova senha', confirmar, setConfirmar)}
+        {erro && (
+          <p role="alert" className="text-danger-600 text-sm font-semibold mt-3">
+            <i className="fa-solid fa-circle-exclamation mr-1.5"></i>
+            {erro}
+          </p>
+        )}
+        <div className="flex justify-end gap-2 mt-6">
+          <button type="button" onClick={onFechar} className={BTN_SECUNDARIO}>
+            Cancelar
+          </button>
+          <button type="submit" className={BTN_PRIMARIO}>
+            Guardar nova senha
+          </button>
+        </div>
+      </form>
+    </div>
+  )
+}
+
+/* ===== FOLHA A4 (desenho original) =====
+   Rodapé comum à folha no ecrã e à folha só para impressão.
+   Em ecrã fica colado ao fundo da folha (mt-auto); em impressão torna-se fixed e
+   repete-se no fundo de TODAS as páginas (ver .folha-a4-footer-real no main.css). */
+function RodapeFolha() {
+  return (
+    <div className="folha-a4-footer-real mt-auto pt-4 border-t-2 border-gray-800">
+      <div className="flex justify-between text-[10px] font-bold text-gray-800 mb-4">
+        <div className="w-1/2">
+          <p className="italic mb-1 text-[11px] text-gray-500">Morada:</p>
+          <p>Rua Novos Mares, 28</p>
+          <p>3830-660 Gafanha da Nazaré</p>
+          <p>Telm - 962 303 861 - 935 990 243</p>
+        </div>
+        <div className="w-1/2 text-right">
+          <p className="italic mb-1 text-[11px] text-gray-500">Oficina:</p>
+          <p>Travessa D. Duarte, 4</p>
+          <p>3830 - 743 Gafanha da Nazaré</p>
+        </div>
+      </div>
+      <p className="text-[8px] text-justify text-gray-500 leading-tight">
+        Todas as Máquinas, independentemente do tipo ou fabricante, têm peças de desgaste que é
+        necessário substituir regularmente, para manter um bom nível de fiabilidade e eficiência
+        energética do equipamento, minimizando assim os custos de manutenção.
+      </p>
+    </div>
+  )
+}
+
+/* Folha só para impressão (usada pelo ícone "Imprimir" da lista de registos).
+   Invisível no ecrã; na impressão sai exatamente igual à folha aberta. */
+function FolhaImpressao({ rel, subtitulo }) {
+  return (
+    <div className="hidden print:block">
+      <div className="folha-a4-pagina folha-original w-[210mm] min-h-[297mm] bg-white mx-auto flex flex-col p-[20mm] relative">
+        <table className="folha-a4 flex flex-col flex-grow w-full border-collapse">
+          <thead className="folha-a4-header block">
+            <tr className="block">
+              <td className="block p-0">
+                <div className="text-center mb-6">
+                  <h1 className="text-3xl font-extrabold text-gray-900 mb-1">Agrafametal, Lda.</h1>
+                  <div className="bg-blue-50 border-t border-b border-blue-200 py-1 mb-6">
+                    <p className="text-[11px] font-semibold text-gray-600 tracking-wide">
+                      <span>NIF 514 304 197 — </span>
+                      <span className="inline-block min-w-[4rem] px-1">{subtitulo}</span>
+                    </p>
+                  </div>
+                  <p className="text-center text-lg font-bold text-blue-900 uppercase pb-1 border-b border-dashed border-gray-300">
+                    {rel.titulo}
+                  </p>
+                  <p className="text-[10px] text-gray-400 mt-2">Data: {formatarData(rel.data)}</p>
+                </div>
+              </td>
+            </tr>
+          </thead>
+          <tbody className="folha-a4-body flex flex-col flex-grow border border-t-0 border-gray-200 print:border-0">
+            <tr className="flex flex-col flex-grow">
+              <td className="block flex-grow relative p-0">
+                <div
+                  className="report-editor text-[13px] leading-relaxed text-gray-800 p-0 [&_b]:font-bold [&_strong]:font-bold [&_i]:italic [&_em]:italic [&_u]:underline [&_ul]:list-disc [&_ol]:list-decimal"
+                  dangerouslySetInnerHTML={{ __html: rel.corpo || '' }}
+                ></div>
+              </td>
+            </tr>
+          </tbody>
+          <tfoot className="hidden folha-a4-footer-spacer">
+            <tr>
+              <td className="p-0">
+                <div className="h-[40mm]"></div>
+              </td>
+            </tr>
+          </tfoot>
+        </table>
+        <RodapeFolha />
+      </div>
     </div>
   )
 }
@@ -237,6 +538,18 @@ export default function App() {
   const [erroEmpresa, setErroEmpresa] = useState('')
   const [erroMaquina, setErroMaquina] = useState('')
   const [erroRenomear, setErroRenomear] = useState('')
+  const [senhaRenomear, setSenhaRenomear] = useState('')
+
+  // Senha / edição protegida
+  const [chapaDesbloqueada, setChapaDesbloqueada] = useState(null) // id da máquina desbloqueada
+  const [isAlterarSenhaOpen, setAlterarSenhaOpen] = useState(false)
+
+  // Folha A4: modo, data escolhida pelo utilizador e impressão a partir da lista
+  const [modoFolha, setModoFolha] = useState('novo') // 'novo' | 'leitura' | 'edicao'
+  const [dataRegisto, setDataRegisto] = useState('')
+  const [relImprimir, setRelImprimir] = useState(null)
+  const dataRef = useRef(null)
+  const subtituloRef = useRef(null)
 
   // Referências para os campos de input
   const inputEmpresaRef = useRef(null)
@@ -284,6 +597,19 @@ export default function App() {
   const responderConfirmacao = (resposta) => {
     pedidoConfirmacao?.resolve(resposta)
     setPedidoConfirmacao(null)
+  }
+
+  // Pedidos de senha (alterar / apagar): resolve true quando a ação foi feita
+  const [pedidoSenha, setPedidoSenha] = useState(null)
+  const pedidoSenhaIdRef = useRef(0)
+  const pedirSenha = (opcoes) =>
+    new Promise((resolve) => {
+      pedidoSenhaIdRef.current += 1
+      setPedidoSenha({ ...opcoes, id: pedidoSenhaIdRef.current, resolve })
+    })
+  const concluirPedidoSenha = (resultado) => {
+    pedidoSenha?.resolve(resultado)
+    setPedidoSenha(null)
   }
 
   const carregarRelatorios = async (id) => {
@@ -417,9 +743,30 @@ export default function App() {
       editorRef.current.innerHTML = relatorioAtual.corpo || ''
       // guarda o HTML já normalizado pelo browser, para comparar ao sair
       corpoInicialRef.current = editorRef.current.innerHTML
-      setTimeout(() => editorRef.current?.focus(), 100)
+      // registo novo: primeiro a data; registo existente abre só para leitura
+      if (!relatorioAtual.id) {
+        setTimeout(() => (relatorioAtual.data ? editorRef : dataRef).current?.focus(), 100)
+      }
     }
   }, [isA4ModalOpen, relatorioAtual])
+
+  // Imprimir a partir da lista: espera a folha de impressão ser montada e abre a impressão
+  useEffect(() => {
+    if (!relImprimir) return
+    const t = setTimeout(async () => {
+      try {
+        const r = await window.api.imprimir()
+        if (!r.sucesso && r.motivo && r.motivo !== 'cancelled') {
+          mostrarToast('Não foi possível imprimir: ' + r.motivo, 'erro')
+        }
+      } catch (error) {
+        mostrarToast('Erro ao imprimir: ' + limparErro(error), 'erro')
+      } finally {
+        setRelImprimir(null)
+      }
+    }, 80)
+    return () => clearTimeout(t)
+  }, [relImprimir])
 
   useEffect(() => {
     if (isA4ModalOpen) {
@@ -491,10 +838,11 @@ export default function App() {
     }
   }
 
-  // --- Renomear / remover empresa ---
+  // --- Renomear / remover empresa (pedem senha) ---
   const abrirRenomearEmpresa = (empresa) => {
     setEmpresaRenomear({ id: empresa.id, nome: empresa.nome })
     setNomeRenomear(empresa.nome)
+    setSenhaRenomear('')
     setErroRenomear('')
   }
 
@@ -502,6 +850,7 @@ export default function App() {
     setEmpresaRenomear(null)
     setErroRenomear('')
     setNomeRenomear('')
+    setSenhaRenomear('')
   }
 
   const handleRenomearEmpresa = async () => {
@@ -514,15 +863,20 @@ export default function App() {
       fecharRenomearEmpresa() // nada mudou
       return
     }
+    if (!senhaRenomear) {
+      setErroRenomear('Introduza a senha.')
+      return
+    }
     if (aGravarRef.current) return
     aGravarRef.current = true
     try {
-      await window.api.updateEmpresa(empresaRenomear.id, nome)
+      await window.api.updateEmpresa(empresaRenomear.id, nome, senhaRenomear)
       fecharRenomearEmpresa()
       await carregarDados()
       mostrarToast('Empresa renomeada', 'sucesso')
     } catch (error) {
-      setErroRenomear('Erro do sistema: ' + error.message)
+      setErroRenomear(limparErro(error))
+      setSenhaRenomear('')
     } finally {
       aGravarRef.current = false
     }
@@ -534,50 +888,72 @@ export default function App() {
       n === 0
         ? `Remover a empresa «${empresa.nome}»? Esta ação não pode ser desfeita.`
         : `Remover a empresa «${empresa.nome}» e ${n === 1 ? 'a sua máquina' : `as suas ${n} máquinas`}, incluindo todos os registos de manutenção? Esta ação não pode ser desfeita.`
-    const ok = await pedirConfirmacao(mensagem, {
+    const ok = await pedirSenha({
       titulo: 'Remover empresa',
+      mensagem,
       textoBotao: 'Remover empresa',
-      perigo: true
+      perigo: true,
+      acao: (senha) => window.api.deleteEmpresa(empresa.id, senha)
     })
     if (!ok) return
-    try {
-      await window.api.deleteEmpresa(empresa.id)
-      if (activeCompanyId === empresa.id) {
-        setActiveMachineId(null)
-        setActiveCompanyId(null)
-        setRelatorios([])
-      }
-      setOpenFolders((prev) => {
-        const novo = { ...prev }
-        delete novo[empresa.id]
-        return novo
-      })
-      await carregarDados()
-      mostrarToast('Empresa removida', 'sucesso')
-    } catch (error) {
-      mostrarToast('Erro ao remover empresa: ' + error.message, 'erro')
+    if (activeCompanyId === empresa.id) {
+      trancarChapa()
+      setActiveMachineId(null)
+      setActiveCompanyId(null)
+      setRelatorios([])
     }
+    setOpenFolders((prev) => {
+      const novo = { ...prev }
+      delete novo[empresa.id]
+      return novo
+    })
+    await carregarDados()
+    mostrarToast('Empresa removida', 'sucesso')
   }
 
   const handleDeleteMaquina = async () => {
-    const ok = await pedirConfirmacao(
-      `Remover a máquina «${activeMachine?.nome}» e todos os seus registos? Esta ação não pode ser desfeita.`,
-      { titulo: 'Remover máquina', textoBotao: 'Remover máquina', perigo: true }
-    )
+    const id = activeMachineId
+    const ok = await pedirSenha({
+      titulo: 'Remover máquina',
+      mensagem: `Remover a máquina «${activeMachine?.nome}» e todos os seus registos? Esta ação não pode ser desfeita.`,
+      textoBotao: 'Remover máquina',
+      perigo: true,
+      acao: (senha) => window.api.deleteMaquina(id, senha)
+    })
     if (!ok) return
-    try {
-      await window.api.deleteMaquina(activeMachineId)
-      setActiveMachineId(null)
-      setActiveCompanyId(null)
-      setRelatorios([]) // Limpa a lista de relatórios do ecrã
-      await carregarDados()
-      mostrarToast('Máquina removida', 'sucesso')
-    } catch (error) {
-      mostrarToast('Erro ao remover máquina: ' + error.message, 'erro')
-    }
+    trancarChapa()
+    setActiveMachineId(null)
+    setActiveCompanyId(null)
+    setRelatorios([]) // Limpa a lista de relatórios do ecrã
+    await carregarDados()
+    mostrarToast('Máquina removida', 'sucesso')
   }
 
-  // --- Cópias de segurança e "Acerca" ---
+  // --- Chapa: só se edita depois de «Editar» + senha ---
+  const trancarChapa = () => {
+    if (chapaDesbloqueada != null) window.api.bloquear('maquina').catch(() => {})
+    setChapaDesbloqueada(null)
+  }
+
+  const handleEditarChapa = async () => {
+    if (!activeMachine) return
+    const id = activeMachine.id
+    const ok = await pedirSenha({
+      titulo: 'Editar características',
+      mensagem: `Introduza a senha para editar as características da máquina «${activeMachine.nome}».`,
+      textoBotao: 'Desbloquear',
+      acao: (senha) => window.api.desbloquear('maquina', id, senha)
+    })
+    if (ok) setChapaDesbloqueada(id)
+  }
+
+  const handleConcluirChapa = () => {
+    // sai do campo em edição primeiro: o blur grava o valor antes de voltar a trancar
+    if (document.activeElement instanceof HTMLElement) document.activeElement.blur()
+    setTimeout(trancarChapa, 0)
+  }
+
+  // --- Cópias de segurança, senha e "Acerca" ---
   const handleBackup = async () => {
     setMenuOpen(false)
     try {
@@ -587,36 +963,39 @@ export default function App() {
         mostrarToast(`Cópia de segurança guardada: ${nome}`, 'sucesso')
       }
     } catch (error) {
-      mostrarToast('Erro ao fazer a cópia: ' + error.message, 'erro')
+      mostrarToast('Erro ao fazer a cópia: ' + limparErro(error), 'erro')
     }
   }
 
   const handleRestaurar = async () => {
     setMenuOpen(false)
+    let escolha
     try {
-      const escolha = await window.api.escolherRestauro()
-      if (escolha.cancelado) return
-      const ok = await pedirConfirmacao(
-        `Restaurar a cópia «${escolha.nome}»?\n` +
-          `Contém ${escolha.empresas} empresa(s), ${escolha.maquinas} máquina(s) e ${escolha.relatorios} registo(s).\n\n` +
-          'Os dados atuais serão substituídos por esta cópia. Antes disso, é guardada automaticamente uma cópia dos dados atuais na pasta das cópias de segurança.',
-        { titulo: 'Restaurar cópia de segurança', textoBotao: 'Restaurar', perigo: true }
-      )
-      if (!ok) return
-      await window.api.restaurarBackup(escolha.caminho)
-      setActiveMachineId(null)
-      setActiveCompanyId(null)
-      setRelatorios([])
-      setPesquisa('')
-      setOpenFolders({})
-      await carregarDados()
-      mostrarToast('Cópia de segurança restaurada', 'sucesso')
+      escolha = await window.api.escolherRestauro()
     } catch (error) {
-      mostrarToast(
-        error.message.replace(/^Error invoking remote method '[^']+': (Error: )?/, ''),
-        'erro'
-      )
+      mostrarToast(limparErro(error), 'erro')
+      return
     }
+    if (escolha.cancelado) return
+    const ok = await pedirSenha({
+      titulo: 'Restaurar cópia de segurança',
+      mensagem:
+        `Restaurar a cópia «${escolha.nome}»?\n` +
+        `Contém ${escolha.empresas} empresa(s), ${escolha.maquinas} máquina(s) e ${escolha.relatorios} registo(s).\n\n` +
+        'Os dados atuais serão substituídos por esta cópia. Antes disso, é guardada automaticamente uma cópia dos dados atuais na pasta das cópias de segurança.',
+      textoBotao: 'Restaurar',
+      perigo: true,
+      acao: (senha) => window.api.restaurarBackup(escolha.caminho, senha)
+    })
+    if (!ok) return
+    setChapaDesbloqueada(null)
+    setActiveMachineId(null)
+    setActiveCompanyId(null)
+    setRelatorios([])
+    setPesquisa('')
+    setOpenFolders({})
+    await carregarDados()
+    mostrarToast('Cópia de segurança restaurada', 'sucesso')
   }
 
   const abrirAcerca = async () => {
@@ -624,40 +1003,78 @@ export default function App() {
     try {
       setAppInfo(await window.api.getAppInfo())
     } catch (error) {
-      mostrarToast('Erro: ' + error.message, 'erro')
+      mostrarToast('Erro: ' + limparErro(error), 'erro')
     }
   }
 
+  // === FOLHA A4 (registos) ===
+  // modoFolha: 'novo' (escreve-se à vontade até guardar), 'leitura' (registo existente),
+  // 'edicao' (registo existente desbloqueado com a senha)
   const handleAbrirNovoRelatorio = () => {
     if (!activeMachine) return
-
-    // Prepara um relatório vazio com valores por defeito
     setRelatorioAtual({
       id: null, // null significa que é novo e ainda não está no SQLite
-      data: new Date().toISOString().slice(0, 10), // Data de hoje (YYYY-MM-DD)
+      data: '', // a data tem de ser escolhida pelo utilizador
       tecnico: '',
       tipo_manutencao: 'Preventiva',
       titulo: `MANUTENÇÃO ${activeMachine.nome.toUpperCase()}`,
       corpo: ''
     })
     setTituloTexto(`MANUTENÇÃO ${activeMachine.nome.toUpperCase()}`)
+    setDataRegisto('')
+    setModoFolha('novo')
     setA4ModalOpen(true)
   }
-  // === FUNÇÕES DA FOLHA A4 ===
+
+  const handleAbrirRelatorio = (rel) => {
+    setRelatorioAtual(rel)
+    setTituloTexto(rel.titulo || '')
+    setDataRegisto(rel.data || '')
+    setModoFolha('leitura')
+    setA4ModalOpen(true)
+  }
+
+  const handleEditarRegisto = async () => {
+    if (!relatorioAtual?.id) return
+    const id = relatorioAtual.id
+    const ok = await pedirSenha({
+      titulo: 'Editar registo',
+      mensagem: 'Introduza a senha para alterar este registo de manutenção.',
+      textoBotao: 'Desbloquear',
+      acao: (senha) => window.api.desbloquear('relatorio', id, senha)
+    })
+    if (!ok) return
+    setModoFolha('edicao')
+    setTimeout(() => editorRef.current?.focus(), 50)
+  }
+
   const applyCmd = (cmd, value = null) => {
     editorRef.current?.focus()
     document.execCommand(cmd, false, value)
   }
 
+  // O subtítulo do cabeçalho é comum a todos os registos: alterá-lo pede a senha
   const handleSaveSubtitulo = async (novoSubtitulo) => {
     const texto = novoSubtitulo.replace(/\s+/g, ' ').trim()
     if (texto === configSubtitulo) return // nada mudou: não grava nem mostra aviso
-    try {
+    const repor = () => {
+      if (subtituloRef.current) subtituloRef.current.textContent = configSubtitulo
+    }
+    if (!texto) {
+      repor()
+      return
+    }
+    const ok = await pedirSenha({
+      titulo: 'Alterar cabeçalho',
+      mensagem: `O cabeçalho de todos os registos passa a ser:\n«${texto}»`,
+      textoBotao: 'Guardar',
+      acao: (senha) => window.api.setConfig('cabecalho_subtitulo', texto, senha)
+    })
+    if (ok) {
       setConfigSubtitulo(texto)
-      await window.api.setConfig('cabecalho_subtitulo', texto)
       mostrarToast('Cabeçalho atualizado', 'sucesso')
-    } catch (error) {
-      mostrarToast('Erro ao guardar cabeçalho: ' + error.message, 'erro')
+    } else {
+      repor()
     }
   }
 
@@ -675,10 +1092,14 @@ export default function App() {
 
   // Deteta alterações por guardar na folha A4
   const temAlteracoesPorGuardar = () => {
-    if (!relatorioAtual) return false
+    if (!relatorioAtual || modoFolha === 'leitura') return false
     const titulo = tituloRef.current?.value ?? relatorioAtual.titulo
     const corpo = editorRef.current?.innerHTML ?? corpoInicialRef.current
-    return titulo !== (relatorioAtual.titulo || '') || corpo !== corpoInicialRef.current
+    return (
+      titulo !== (relatorioAtual.titulo || '') ||
+      corpo !== corpoInicialRef.current ||
+      dataRegisto !== (relatorioAtual.data || '')
+    )
   }
 
   const handleFecharA4 = async () => {
@@ -689,16 +1110,28 @@ export default function App() {
       )
       if (!sair) return
     }
+    if (relatorioAtual?.id) window.api.bloquear('relatorio').catch(() => {})
     setA4ModalOpen(false)
   }
 
+  const exigirData = () => {
+    if (dataRegisto) return true
+    mostrarToast('Escolha primeiro a data da intervenção.', 'erro')
+    dataRef.current?.focus()
+    return false
+  }
+
   const handleSaveRelatorio = async () => {
-    if (!activeMachine || !relatorioAtual) return
+    if (!activeMachine || !relatorioAtual || modoFolha === 'leitura') return
+    if (!exigirData()) return
+    if (dataRegisto > hojeLocal()) {
+      mostrarToast('A data da intervenção não pode ser no futuro.', 'erro')
+      return
+    }
 
     const titulo = tituloRef.current?.value.trim() || 'REGISTO SEM TÍTULO'
     const corpo = editorRef.current?.innerHTML || ''
-
-    const dadosGuardar = { ...relatorioAtual, titulo, corpo }
+    const dadosGuardar = { ...relatorioAtual, data: dataRegisto, titulo, corpo }
 
     try {
       await window.api.saveRelatorio(activeMachine.id, dadosGuardar)
@@ -709,32 +1142,47 @@ export default function App() {
       const novosRels = await window.api.getRelatorios(activeMachine.id)
       setRelatorios(novosRels)
     } catch (error) {
-      mostrarToast('Erro ao guardar documento: ' + error.message, 'erro')
+      mostrarToast('Erro ao guardar documento: ' + limparErro(error), 'erro')
     }
   }
-  const handleAbrirRelatorio = (rel) => {
-    setRelatorioAtual(rel)
-    setTituloTexto(rel.titulo || '')
-    setA4ModalOpen(true)
-  }
 
-  const handleApagarRelatorio = async (id) => {
-    const ok = await pedirConfirmacao('Eliminar este registo de manutenção?', {
+  const handleApagarRelatorio = async (rel) => {
+    const ok = await pedirSenha({
       titulo: 'Eliminar registo',
+      mensagem: `Eliminar o registo de ${formatarData(rel.data)} («${rel.titulo}»)? Esta ação não pode ser desfeita.`,
       textoBotao: 'Eliminar',
-      perigo: true
+      perigo: true,
+      acao: (senha) => window.api.deleteRelatorio(rel.id, senha)
     })
     if (!ok) return
+    mostrarToast('Registo eliminado', 'sucesso')
+    carregarRelatorios(activeMachine.id)
+  }
+
+  // Impressão: abre a janela de impressão do sistema (mesmo resultado que o PDF)
+  const imprimirPagina = async () => {
     try {
-      await window.api.deleteRelatorio(id)
-      mostrarToast('Registo eliminado', 'sucesso')
-      carregarRelatorios(activeMachine.id)
+      const r = await window.api.imprimir()
+      if (!r.sucesso && r.motivo && r.motivo !== 'cancelled') {
+        mostrarToast('Não foi possível imprimir: ' + r.motivo, 'erro')
+      }
     } catch (error) {
-      mostrarToast('Erro ao apagar: ' + error.message, 'erro')
+      mostrarToast('Erro ao imprimir: ' + limparErro(error), 'erro')
     }
   }
 
+  const handleImprimir = async () => {
+    if (!exigirData()) return
+    // o título impresso vem do texto atual do campo
+    setTituloTexto(tituloRef.current?.value ?? tituloTexto)
+    await imprimirPagina()
+  }
+
+  // Imprimir diretamente da lista: monta a folha só para impressão e abre a janela de impressão
+  const handleImprimirDaLista = (rel) => setRelImprimir(rel)
+
   const handleExportarPDF = async () => {
+    if (!exigirData()) return
     const titulo = tituloRef.current?.value.trim() || 'relatorio'
     try {
       const resultado = await window.api.exportarPDF(titulo)
@@ -743,13 +1191,13 @@ export default function App() {
       }
       // Se o utilizador cancelar o diálogo, "sucesso" vem false — não mostramos erro nenhum, é escolha dele
     } catch (error) {
-      mostrarToast('Erro ao exportar PDF: ' + error.message, 'erro')
+      mostrarToast('Erro ao exportar PDF: ' + limparErro(error), 'erro')
     }
   }
 
-  // Grava as alterações feitas diretamente na Chapa Metálica
+  // Grava as alterações feitas diretamente na Chapa Metálica (só com a chapa desbloqueada)
   const handleUpdateChapa = async (campo, valorText) => {
-    if (!activeMachine) return
+    if (!activeMachine || chapaDesbloqueada !== activeMachine.id) return
 
     let valor = valorText.trim()
     if (valor === '-') valor = ''
@@ -762,7 +1210,7 @@ export default function App() {
       await carregarDados()
       mostrarToast('Alteração guardada', 'sucesso')
     } catch (error) {
-      mostrarToast('Erro ao guardar: ' + error.message, 'erro')
+      mostrarToast('Erro ao guardar: ' + limparErro(error), 'erro')
     }
   }
 
@@ -771,6 +1219,7 @@ export default function App() {
   }
 
   const selecionarMaquina = (companyId, machineId) => {
+    if (machineId !== activeMachineId) trancarChapa() // mudar de máquina volta a trancar a chapa
     setActiveCompanyId(companyId)
     setActiveMachineId(machineId)
   }
@@ -804,6 +1253,10 @@ export default function App() {
   // Helper para obter a máquina selecionada atual
   const activeCompany = empresas.find((e) => e.id === activeCompanyId)
   const activeMachine = activeCompany?.maquinas.find((m) => m.id === activeMachineId)
+  const chapaEditavel = !!activeMachine && chapaDesbloqueada === activeMachine.id
+  // Folha A4: registo novo ou desbloqueado -> editável; só se escreve depois de haver data
+  const folhaEditavel = modoFolha !== 'leitura'
+  const podeEscrever = folhaEditavel && !!dataRegisto
   // Só mostra relatórios da máquina ativa (evita ver por instantes os da máquina anterior)
   const relatoriosMaquina = activeMachine
     ? relatorios.filter((r) => r.maquina_id === activeMachine.id)
@@ -1006,6 +1459,7 @@ export default function App() {
                 {[
                   ['fa-floppy-disk', 'Fazer cópia de segurança', 'backup'],
                   ['fa-clock-rotate-left', 'Restaurar cópia de segurança', 'restaurar'],
+                  ['fa-key', 'Alterar senha', 'senha'],
                   ['fa-circle-info', 'Acerca da aplicação', 'acerca']
                 ].map(([icone, texto, acao], i) => (
                   <button
@@ -1015,7 +1469,10 @@ export default function App() {
                     onClick={() => {
                       if (acao === 'backup') handleBackup()
                       else if (acao === 'restaurar') handleRestaurar()
-                      else abrirAcerca()
+                      else if (acao === 'senha') {
+                        setMenuOpen(false)
+                        setAlterarSenhaOpen(true)
+                      } else abrirAcerca()
                     }}
                     className="w-full flex items-center gap-3 px-4 py-2.5 text-left text-[15px] text-slate-700 hover:bg-slate-100 focus:bg-slate-100 outline-none"
                   >
@@ -1077,10 +1534,34 @@ export default function App() {
           ) : (
             /* Estado Preenchido: Chapa Metálica e Relatórios */
             <div className="max-w-5xl mx-auto">
-              {/* === CHAPA DE CARACTERÍSTICAS === */}
+              {/* === CHAPA DE CARACTERÍSTICAS === (protegida: «Editar» pede a senha) */}
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+                <p
+                  className={`text-[15px] flex items-center gap-2 ${chapaEditavel ? 'text-accent-700 font-semibold' : 'text-slate-600'}`}
+                >
+                  <i
+                    className={`fa-solid ${chapaEditavel ? 'fa-lock-open text-accent-500' : 'fa-lock text-slate-400'}`}
+                  ></i>
+                  {chapaEditavel
+                    ? 'Edição desbloqueada: clique num valor para o alterar.'
+                    : 'Características protegidas por senha.'}
+                </p>
+                {chapaEditavel ? (
+                  <button onClick={handleConcluirChapa} className={`${BTN_PRIMARIO} py-2`}>
+                    <i className="fa-solid fa-check"></i>Concluir
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleEditarChapa}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-md border border-slate-300 bg-white text-base font-semibold text-slate-700 hover:bg-slate-50 hover:border-slate-400 shadow-sm transition"
+                  >
+                    <i className="fa-solid fa-pen"></i>Editar
+                  </button>
+                )}
+              </div>
               <div
                 key={activeMachine.id}
-                className="@container bg-gradient-to-br from-slate-700 to-slate-900 text-slate-200 border-2 border-slate-500 shadow-[inset_0_0_15px_rgba(0,0,0,0.6)] rounded-lg p-5 @lg:p-7 mb-8 relative"
+                className={`@container bg-gradient-to-br from-slate-700 to-slate-900 text-slate-200 border-2 shadow-[inset_0_0_15px_rgba(0,0,0,0.6)] rounded-lg p-5 @lg:p-7 mb-8 relative transition ${chapaEditavel ? 'border-accent-400 ring-4 ring-accent-300/50' : 'border-slate-500'}`}
               >
                 {/* Parafusos visuais nos cantos */}
                 <div className="absolute top-3 left-3 w-2.5 h-2.5 rounded-full bg-slate-400 shadow-inner"></div>
@@ -1109,7 +1590,8 @@ export default function App() {
                         ariaLabel={rotulo}
                         valor={activeMachine[campo]}
                         onGuardar={(v) => handleUpdateChapa(campo, v)}
-                        className="w-full font-mono text-lg font-bold text-white focus:bg-white/10 hover:bg-white/5 rounded transition-colors px-2 py-1 -ml-2"
+                        bloqueado={!chapaEditavel}
+                        className={`w-full font-mono text-lg font-bold text-white rounded transition-colors px-2 py-1 -ml-2 ${chapaEditavel ? 'bg-white/5 hover:bg-white/10 focus:bg-white/15' : ''}`}
                       />
                     </div>
                   ))}
@@ -1151,7 +1633,8 @@ export default function App() {
                               valor={activeMachine[campo]}
                               onGuardar={(v) => handleUpdateChapa(campo, v)}
                               placeholder=""
-                              className="bg-slate-800 px-2 py-1.5 rounded font-mono text-base text-white border border-slate-600 focus:bg-slate-700 focus:border-accent-400 w-[5rem] text-center shadow-inner"
+                              bloqueado={!chapaEditavel}
+                              className={`px-2 py-1.5 rounded font-mono text-base text-white border w-[5rem] text-center shadow-inner ${chapaEditavel ? 'bg-slate-800 border-accent-400/60 focus:bg-slate-700 focus:border-accent-300' : 'bg-slate-800/60 border-slate-600'}`}
                             />
                             <span className="text-slate-400 text-xs font-bold">{unidade}</span>
                           </div>
@@ -1162,7 +1645,9 @@ export default function App() {
                 </div>
 
                 <p className="text-xs text-slate-400 mt-6 text-center italic">
-                  Clique num valor para o editar. Enter grava, Esc anula.
+                  {chapaEditavel
+                    ? 'Clique num valor para o editar. Enter grava, Esc anula. No fim, carregue em «Concluir».'
+                    : 'Para alterar estes valores, carregue em «Editar» (pede a senha).'}
                 </p>
               </div>
 
@@ -1233,12 +1718,20 @@ export default function App() {
                                         >
                                           <i className="fa-solid fa-file-lines text-brand-500 mr-2.5"></i>
                                           <span className="tabular-nums text-slate-500 mr-2 shrink-0">
-                                            {rel.data.split('-').reverse().join('-')}
+                                            {formatarData(rel.data)}
                                           </span>
                                           <span className="truncate">{rel.titulo}</span>
                                         </button>
                                         <button
-                                          onClick={() => handleApagarRelatorio(rel.id)}
+                                          onClick={() => handleImprimirDaLista(rel)}
+                                          className="opacity-60 group-hover/file:opacity-100 focus:opacity-100 w-9 h-9 rounded text-slate-500 hover:text-brand-700 hover:bg-brand-100 transition shrink-0"
+                                          title="Imprimir"
+                                          aria-label={`Imprimir registo de ${formatarData(rel.data)}`}
+                                        >
+                                          <i className="fa-solid fa-print text-sm"></i>
+                                        </button>
+                                        <button
+                                          onClick={() => handleApagarRelatorio(rel)}
                                           className="opacity-40 group-hover/file:opacity-100 focus:opacity-100 w-9 h-9 rounded text-slate-500 hover:text-danger-600 hover:bg-danger-50 transition shrink-0"
                                           title="Eliminar registo"
                                           aria-label="Eliminar registo"
@@ -1318,6 +1811,11 @@ export default function App() {
           inputRef={inputRenomearRef}
           onConfirmar={handleRenomearEmpresa}
           onCancelar={fecharRenomearEmpresa}
+          senha={senhaRenomear}
+          onChangeSenha={(v) => {
+            setSenhaRenomear(v)
+            setErroRenomear('')
+          }}
         />
       )}
 
@@ -1383,48 +1881,78 @@ export default function App() {
         </div>
       )}
 
-      {/* ================= MODAL FOLHA A4 ================= */}
+      {/* ================= MODAL FOLHA A4 (desenho original) ================= */}
       {isA4ModalOpen && relatorioAtual && (
         <div
-          className="fixed inset-0 bg-brand-950/90 z-[80] overflow-y-auto pb-10 print:static print:bg-white print:overflow-visible print:pb-0 print:p-0"
+          className="fixed inset-0 bg-gray-900/90 z-[80] overflow-y-auto pb-10 print:static print:bg-white print:overflow-visible print:pb-0 print:p-0"
           onKeyDown={(e) => {
-            // Ctrl+S guarda; Esc volta (pergunta se houver alterações)
-            if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
+            // Ctrl+S guarda; Ctrl+P imprime; Esc volta (pergunta se houver alterações)
+            if (pedidoSenha || pedidoConfirmacao) return
+            const tecla = e.key.toLowerCase()
+            if ((e.ctrlKey || e.metaKey) && tecla === 's') {
               e.preventDefault()
-              handleSaveRelatorio()
-            } else if (e.key === 'Escape' && !pedidoConfirmacao) {
+              if (folhaEditavel) handleSaveRelatorio()
+            } else if ((e.ctrlKey || e.metaKey) && tecla === 'p') {
+              e.preventDefault()
+              handleImprimir()
+            } else if (e.key === 'Escape') {
               e.preventDefault()
               handleFecharA4()
             }
           }}
         >
           {/* Barra Superior Escura */}
-          <div className="fixed top-0 left-0 right-0 bg-brand-900 text-white px-4 py-3 flex justify-between items-center gap-2 shadow-lg z-[90] print:hidden">
+          <div className="fixed top-0 left-0 right-0 bg-gray-800 text-white p-3 flex justify-between items-center gap-2 shadow-lg z-[90] print:hidden">
             <div className="flex items-center min-w-0">
               <button
                 onClick={handleFecharA4}
-                className="bg-white/10 hover:bg-white/20 px-4 py-2 rounded-md text-[15px] font-medium mr-4 transition shrink-0"
+                className="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded text-sm mr-4 transition shrink-0"
               >
                 <i className="fa-solid fa-arrow-left mr-2"></i>Voltar
               </button>
-              <span className="hidden md:inline text-[15px] text-brand-100 font-semibold truncate">
-                {relatorioAtual.id ? 'Editar registo existente' : 'Novo registo'}
+              <span className="hidden md:inline text-sm text-gray-300 font-semibold truncate">
+                {modoFolha === 'novo'
+                  ? 'Novo Registo'
+                  : modoFolha === 'edicao'
+                    ? 'Editar Registo Existente'
+                    : 'Registo (só leitura)'}
               </span>
             </div>
             <div className="flex gap-2 shrink-0">
+              {modoFolha === 'leitura' && (
+                <button
+                  onClick={handleEditarRegisto}
+                  title="Alterar este registo (pede a senha)"
+                  className="bg-amber-600 hover:bg-amber-500 px-4 py-2 rounded text-sm font-bold shadow transition"
+                >
+                  <i className="fa-solid fa-pen mr-2"></i>Editar
+                </button>
+              )}
+              <button
+                onClick={handleImprimir}
+                disabled={!dataRegisto}
+                title="Imprimir (Ctrl+P)"
+                className="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded text-sm font-bold shadow transition disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <i className="fa-solid fa-print mr-2"></i>Imprimir
+              </button>
               <button
                 onClick={handleExportarPDF}
-                className="bg-white/10 hover:bg-white/20 border border-white/20 px-4 py-2 rounded-md text-[15px] font-semibold transition"
+                disabled={!dataRegisto}
+                className="bg-red-600 hover:bg-red-500 px-4 py-2 rounded text-sm font-bold shadow transition disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                <i className="fa-solid fa-file-pdf mr-2 text-accent-300"></i>Exportar PDF
+                <i className="fa-solid fa-file-pdf mr-2"></i>Exportar PDF
               </button>
-              <button
-                onClick={handleSaveRelatorio}
-                title="Guardar (Ctrl+S)"
-                className="bg-ok-600 hover:bg-ok-700 px-4 lg:px-6 py-2 rounded-md text-[15px] font-bold shadow transition"
-              >
-                <i className="fa-solid fa-floppy-disk mr-2"></i>Guardar
-              </button>
+              {folhaEditavel && (
+                <button
+                  onClick={handleSaveRelatorio}
+                  disabled={!dataRegisto}
+                  title="Guardar (Ctrl+S)"
+                  className="bg-green-600 hover:bg-green-500 px-4 lg:px-6 py-2 rounded text-sm font-bold shadow transition disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <i className="fa-solid fa-floppy-disk mr-2"></i>Guardar
+                </button>
+              )}
             </div>
           </div>
 
@@ -1435,28 +1963,55 @@ export default function App() {
             reais (com divs em display:table o texto ficava por baixo do rodapé).
             Em ecrã as partes da tabela são mostradas como blocos/flex normais.
           */}
-          <div className="folha-a4-pagina w-[210mm] max-w-[calc(100%-1rem)] min-h-[297mm] bg-white shadow-2xl mx-auto mt-20 flex flex-col p-[12mm] lg:p-[20mm] relative">
+          <div className="folha-a4-pagina folha-original w-[210mm] max-w-[calc(100%-1rem)] min-h-[297mm] bg-white shadow-2xl mx-auto mt-20 flex flex-col p-[12mm] lg:p-[20mm] relative">
+            {/* Data da intervenção (obrigatória) — controlo de ecrã, não sai na impressão */}
+            {folhaEditavel && (
+              <div
+                className={`print:hidden mb-5 flex flex-wrap items-center justify-center gap-2 rounded border px-3 py-2 text-sm ${dataRegisto ? 'border-gray-200 bg-gray-50 text-gray-600' : 'border-amber-400 bg-amber-50 text-amber-900'}`}
+              >
+                <label htmlFor="data-intervencao" className="font-semibold">
+                  <i className="fa-regular fa-calendar mr-1.5"></i>Data da intervenção:
+                </label>
+                <input
+                  id="data-intervencao"
+                  ref={dataRef}
+                  type="date"
+                  value={dataRegisto}
+                  max={hojeLocal()}
+                  required
+                  onChange={(e) => {
+                    const v = e.target.value
+                    if (v && v > hojeLocal()) {
+                      mostrarToast('A data da intervenção não pode ser no futuro.', 'erro')
+                      return
+                    }
+                    setDataRegisto(v)
+                  }}
+                  className="border border-gray-300 rounded px-2 py-1 text-sm text-gray-800 bg-white outline-none focus:border-blue-500"
+                />
+              </div>
+            )}
+
             <table className="folha-a4 flex flex-col flex-grow w-full border-collapse">
               {/* ===== CABEÇALHO — repete em todas as páginas ===== */}
               <thead className="folha-a4-header block">
                 <tr className="block">
                   <td className="block p-0">
                     <div className="text-center mb-6">
-                      <div className="flex items-center justify-center gap-3 mb-2">
-                        <img src={logoSimbolo} alt="" className="w-11 h-11" />
-                        <h1 className="text-3xl font-extrabold text-brand-900 tracking-tight">
-                          Agrafametal, Lda.
-                        </h1>
-                      </div>
-                      <div className="bg-brand-50 border-t border-b border-brand-200 py-1 mb-6 group cursor-text">
-                        <p className="text-[11px] font-semibold text-slate-600 tracking-wide">
+                      <h1 className="text-3xl font-extrabold text-gray-900 mb-1">
+                        Agrafametal, Lda.
+                      </h1>
+                      <div className="bg-blue-50 border-t border-b border-blue-200 py-1 mb-6 group cursor-text">
+                        <p className="text-[11px] font-semibold text-gray-600 tracking-wide">
                           <span>NIF 514 304 197 — </span>
                           <span
+                            ref={subtituloRef}
                             contentEditable
                             suppressContentEditableWarning
+                            title="Alterar o cabeçalho (pede a senha)"
                             onBlur={(e) => handleSaveSubtitulo(e.currentTarget.textContent)}
                             onKeyDown={handleSubtituloKeyDown}
-                            className="inline-block min-w-[4rem] outline-none hover:bg-brand-100 focus:bg-white px-1"
+                            className="inline-block min-w-[4rem] outline-none hover:bg-blue-100 focus:bg-white px-1"
                           >
                             {configSubtitulo}
                           </span>
@@ -1466,6 +2021,7 @@ export default function App() {
                         ref={tituloRef}
                         defaultValue={relatorioAtual.titulo}
                         type="text"
+                        readOnly={!podeEscrever}
                         onKeyDown={(e) => {
                           // Enter no título passa para o texto do relatório
                           if (e.key === 'Enter') {
@@ -1474,76 +2030,116 @@ export default function App() {
                           }
                         }}
                         onChange={(e) => setTituloTexto(e.target.value)}
-                        className="w-full text-center text-lg font-bold text-brand-800 uppercase bg-transparent outline-none border-b border-dashed border-slate-300 focus:border-brand-500 pb-1 print:hidden"
+                        className={`w-full text-center text-lg font-bold text-blue-900 uppercase bg-transparent outline-none border-b border-dashed border-gray-300 focus:border-blue-500 pb-1 print:hidden ${!podeEscrever ? 'cursor-default' : ''}`}
                         placeholder="TÍTULO DA INTERVENÇÃO"
                       />
                       {/* Na impressão usa texto normal: o valor de um <input> não aparece
                           nas cópias do cabeçalho repetidas nas páginas seguintes */}
-                      <p className="hidden print:block text-center text-lg font-bold text-brand-800 uppercase pb-1 border-b border-dashed border-slate-300">
+                      <p className="hidden print:block text-center text-lg font-bold text-blue-900 uppercase pb-1 border-b border-dashed border-gray-300">
                         {tituloTexto}
                       </p>
-                      <p className="text-[10px] text-slate-500 mt-2 tabular-nums">
-                        Data: {relatorioAtual.data.split('-').reverse().join('-')}
+                      <p className="text-[10px] text-gray-400 mt-2">
+                        Data: {formatarData(dataRegisto)}
                       </p>
                     </div>
 
                     {/* Barra de Ferramentas de Texto — não aparece na impressão */}
-                    <div className="flex flex-wrap items-center gap-1 border border-slate-200 bg-slate-50 rounded-t-md p-1.5 shadow-sm print:hidden">
-                      {[
-                        ['fa-bold', 'bold', 'Negrito'],
-                        ['fa-italic', 'italic', 'Itálico'],
-                        ['fa-underline', 'underline', 'Sublinhado'],
-                        null,
-                        ['fa-align-left', 'justifyLeft', 'Alinhar à esquerda'],
-                        ['fa-align-center', 'justifyCenter', 'Centrar'],
-                        ['fa-align-right', 'justifyRight', 'Alinhar à direita'],
-                        null,
-                        ['fa-list-ul', 'insertUnorderedList', 'Lista com marcas'],
-                        ['fa-list-ol', 'insertOrderedList', 'Lista numerada'],
-                        null
-                      ].map((b, i) =>
-                        b ? (
-                          <button
-                            key={b[1]}
-                            title={b[2]}
-                            onMouseDown={(e) => e.preventDefault()}
-                            onClick={() => applyCmd(b[1])}
-                            className="w-9 h-9 rounded text-slate-600 hover:bg-slate-200 hover:text-brand-700 transition"
-                          >
-                            <i className={`fa-solid ${b[0]}`}></i>
-                          </button>
-                        ) : (
-                          <div key={`sep${i}`} className="w-px h-5 bg-slate-300 mx-1"></div>
-                        )
-                      )}
-                      {[
-                        ['✓', 'text-ok-600', 'Inserir visto'],
-                        ['➤', 'text-brand-600', 'Inserir seta'],
-                        ['✗', 'text-danger-600', 'Inserir cruz']
-                      ].map(([simbolo, cor, titulo]) => (
-                        <button
-                          key={simbolo}
-                          title={titulo}
-                          onMouseDown={(e) => e.preventDefault()}
-                          onClick={() => inserirSimbolo(simbolo)}
-                          className={`w-9 h-9 rounded ${cor} hover:bg-slate-200 transition font-bold`}
-                        >
-                          {simbolo}
-                        </button>
-                      ))}
+                    <div
+                      className={`flex flex-wrap items-center gap-1 border border-gray-200 bg-gray-50 rounded-t-md p-1.5 shadow-sm print:hidden ${!podeEscrever ? 'opacity-40 pointer-events-none' : ''}`}
+                      aria-disabled={!podeEscrever}
+                    >
+                      {' '}
                       <button
-                        title="Aumentar avanço"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => applyCmd('bold')}
+                        className="w-8 h-8 rounded text-gray-600 hover:bg-gray-200 hover:text-blue-700 transition"
+                      >
+                        <i className="fa-solid fa-bold"></i>
+                      </button>
+                      <button
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => applyCmd('italic')}
+                        className="w-8 h-8 rounded text-gray-600 hover:bg-gray-200 hover:text-blue-700 transition"
+                      >
+                        <i className="fa-solid fa-italic"></i>
+                      </button>
+                      <button
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => applyCmd('underline')}
+                        className="w-8 h-8 rounded text-gray-600 hover:bg-gray-200 hover:text-blue-700 transition"
+                      >
+                        <i className="fa-solid fa-underline"></i>
+                      </button>
+                      <div className="w-px h-5 bg-gray-300 mx-1"></div>
+                      <button
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => applyCmd('justifyLeft')}
+                        className="w-8 h-8 rounded text-gray-600 hover:bg-gray-200 hover:text-blue-700 transition"
+                      >
+                        <i className="fa-solid fa-align-left"></i>
+                      </button>
+                      <button
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => applyCmd('justifyCenter')}
+                        className="w-8 h-8 rounded text-gray-600 hover:bg-gray-200 hover:text-blue-700 transition"
+                      >
+                        <i className="fa-solid fa-align-center"></i>
+                      </button>
+                      <button
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => applyCmd('justifyRight')}
+                        className="w-8 h-8 rounded text-gray-600 hover:bg-gray-200 hover:text-blue-700 transition"
+                      >
+                        <i className="fa-solid fa-align-right"></i>
+                      </button>
+                      <div className="w-px h-5 bg-gray-300 mx-1"></div>
+                      <button
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => applyCmd('insertUnorderedList')}
+                        className="w-8 h-8 rounded text-gray-600 hover:bg-gray-200 hover:text-blue-700 transition"
+                      >
+                        <i className="fa-solid fa-list-ul"></i>
+                      </button>
+                      <button
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => applyCmd('insertOrderedList')}
+                        className="w-8 h-8 rounded text-gray-600 hover:bg-gray-200 hover:text-blue-700 transition"
+                      >
+                        <i className="fa-solid fa-list-ol"></i>
+                      </button>
+                      <div className="w-px h-5 bg-gray-300 mx-1"></div>
+                      <button
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => inserirSimbolo('✓')}
+                        className="w-8 h-8 rounded text-green-600 hover:bg-gray-200 transition font-bold"
+                      >
+                        ✓
+                      </button>
+                      <button
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => inserirSimbolo('➤')}
+                        className="w-8 h-8 rounded text-blue-600 hover:bg-gray-200 transition font-bold"
+                      >
+                        ➤
+                      </button>
+                      <button
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => inserirSimbolo('✗')}
+                        className="w-8 h-8 rounded text-red-600 hover:bg-gray-200 transition font-bold"
+                      >
+                        ✗
+                      </button>
+                      <button
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={() => applyCmd('indent')}
-                        className="w-9 h-9 rounded text-slate-600 hover:bg-slate-200 transition"
+                        className="w-8 h-8 rounded text-gray-600 hover:bg-gray-200 transition"
                       >
                         <i className="fa-solid fa-indent"></i>
                       </button>
                       <button
-                        title="Diminuir avanço"
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={() => applyCmd('outdent')}
-                        className="w-9 h-9 rounded text-slate-600 hover:bg-slate-200 transition"
+                        className="w-8 h-8 rounded text-gray-600 hover:bg-gray-200 transition"
                       >
                         <i className="fa-solid fa-outdent"></i>
                       </button>
@@ -1553,16 +2149,24 @@ export default function App() {
               </thead>
 
               {/* ===== CORPO — flui livremente entre páginas ===== */}
-              <tbody className="folha-a4-body flex flex-col flex-grow border border-t-0 border-slate-200 print:border-0">
+              <tbody className="folha-a4-body flex flex-col flex-grow border border-t-0 border-gray-200 print:border-0">
                 <tr className="flex flex-col flex-grow">
                   <td className="block flex-grow relative p-0 min-h-[80mm]">
                     <div
                       ref={editorRef}
-                      className="absolute inset-0 p-4 text-[14px] leading-relaxed text-slate-900 outline-none overflow-y-auto print:static print:h-auto print:overflow-visible print:p-0 [&_b]:font-bold [&_strong]:font-bold [&_i]:italic [&_em]:italic [&_u]:underline [&_ul]:list-disc [&_ol]:list-decimal"
-                      contentEditable
+                      className="report-editor absolute inset-0 p-4 text-[13px] leading-relaxed text-gray-800 outline-none overflow-y-auto print:static print:h-auto print:overflow-visible print:p-0 [&_b]:font-bold [&_strong]:font-bold [&_i]:italic [&_em]:italic [&_u]:underline [&_ul]:list-disc [&_ol]:list-decimal"
+                      contentEditable={podeEscrever}
                       suppressContentEditableWarning
                       onKeyDown={handleEditorKeyDown}
                     ></div>
+                    {folhaEditavel && !dataRegisto && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-gray-50/80 text-gray-500 text-sm font-semibold print:hidden">
+                        <span>
+                          <i className="fa-regular fa-calendar mr-2"></i>Escolha primeiro a data da
+                          intervenção
+                        </span>
+                      </div>
+                    )}
                   </td>
                 </tr>
               </tbody>
@@ -1583,35 +2187,28 @@ export default function App() {
               </tfoot>
             </table>
 
-            {/*
-              ===== RODAPÉ REAL =====
-              Em ecrã: fica colado ao fundo da folha (mt-auto).
-              Em impressão: torna-se fixed e repete-se fisicamente
-              no fundo de TODAS as páginas (ver .folha-a4-footer-real
-              no main.css).
-            */}
-            <div className="folha-a4-footer-real mt-auto pt-4 border-t-2 border-brand-900">
-              <div className="flex justify-between text-[10px] font-bold text-slate-800 mb-4">
-                <div className="w-1/2">
-                  <p className="italic mb-1 text-[11px] text-slate-500">Morada:</p>
-                  <p>Rua Novos Mares, 28</p>
-                  <p>3830-660 Gafanha da Nazaré</p>
-                  <p>Telm - 962 303 861 - 935 990 243</p>
-                </div>
-                <div className="w-1/2 text-right">
-                  <p className="italic mb-1 text-[11px] text-slate-500">Oficina:</p>
-                  <p>Travessa D. Duarte, 4</p>
-                  <p>3830 - 743 Gafanha da Nazaré</p>
-                </div>
-              </div>
-              <p className="text-[8px] text-justify text-slate-500 leading-tight">
-                Todas as Máquinas, independentemente do tipo ou fabricante, têm peças de desgaste
-                que é necessário substituir regularmente, para manter um bom nível de fiabilidade e
-                eficiência energética do equipamento, minimizando assim os custos de manutenção.
-              </p>
-            </div>
+            <RodapeFolha />
           </div>
         </div>
+      )}
+
+      {/* Folha só para impressão (ícone «Imprimir» da lista de registos) */}
+      {relImprimir && !isA4ModalOpen && (
+        <FolhaImpressao rel={relImprimir} subtitulo={configSubtitulo} />
+      )}
+
+      {pedidoSenha && (
+        <ModalSenha key={pedidoSenha.id} pedido={pedidoSenha} onConcluir={concluirPedidoSenha} />
+      )}
+
+      {isAlterarSenhaOpen && (
+        <ModalAlterarSenha
+          onFechar={() => setAlterarSenhaOpen(false)}
+          onSucesso={() => {
+            setAlterarSenhaOpen(false)
+            mostrarToast('Senha alterada', 'sucesso')
+          }}
+        />
       )}
 
       <ConfirmModal pedido={pedidoConfirmacao} onResponder={responderConfirmacao} />

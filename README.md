@@ -30,8 +30,8 @@ Os dois ficheiros aparecem na pasta `dist\`:
 
 | Ficheiro                          | Para quê                                                          |
 | --------------------------------- | ----------------------------------------------------------------- |
-| `Agrafametal-1.0.0-setup.exe`     | Instalador: instala num PC (dados ficam nesse PC)                 |
-| `Agrafametal-1.0.0-portable.exe`  | Versão portátil: copia-se para o disco externo (dados no disco)   |
+| `Agrafametal-1.1.0-setup.exe`     | Instalador: instala num PC (dados ficam nesse PC)                 |
+| `Agrafametal-1.1.0-portable.exe`  | Versão portátil: copia-se para o disco externo (dados no disco)   |
 
 A versão vem do campo `version` do `package.json`.
 
@@ -45,6 +45,23 @@ O mesmo código serve as duas versões (ver `resolverPastaDados()` em `src/main/
 
 As cópias de segurança são guardadas por defeito em `dados\backups\`.
 A janela «Acerca» (menu ⋮ no canto inferior esquerdo) mostra a pasta de dados em uso.
+
+## Senha (proteção de alterações)
+
+- Alterar ou apagar dados pede a senha; criar, consultar, imprimir e exportar não.
+- A senha é verificada no processo principal (`exigirSenha` / `exigirDesbloqueio` em
+  `src/main/index.js`); a interface não decide nada.
+- Na base de dados só fica um hash scrypt (chave `senha_hash` na tabela `config`). A senha
+  por defeito também está no código apenas em hash (`SENHA_PADRAO_HASH`).
+- Restaurar uma cópia de segurança mantém a senha atual.
+
+**Repor a senha por defeito** (cliente esqueceu-se da senha):
+
+1. Fechar a aplicação.
+2. Na pasta de dados (o caminho aparece em «Acerca»), criar um ficheiro vazio chamado
+   `REPOR_SENHA` (também funciona `REPOR_SENHA.txt`).
+3. Abrir a aplicação: a senha volta à de defeito e o ficheiro é apagado automaticamente.
+   Os dados não são alterados.
 
 ## Estrutura
 
