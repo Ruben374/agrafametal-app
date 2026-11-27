@@ -133,11 +133,7 @@ function ConfirmModal({ pedido, onResponder }) {
             className={`shrink-0 w-11 h-11 rounded-full flex items-center justify-center ${pedido.perigo ? 'bg-danger-50 text-danger-600' : 'bg-brand-50 text-brand-700'}`}
           >
             <i
-<<<<<<< HEAD
-              className={`fa-solid ${pedido.perigo ? 'fa-triangle-exclamation' : 'fa-circle-question'} text-lg`}
-=======
               className={`fa-solid ${pedido.perigo ? 'fa-triangle-exclamation' : pedido.soOk ? 'fa-circle-info' : 'fa-circle-question'} text-lg`}
->>>>>>> 6aba7f0 (a)
             ></i>
           </div>
           <div className="min-w-0">
@@ -150,17 +146,11 @@ function ConfirmModal({ pedido, onResponder }) {
           </div>
         </div>
         <div className="flex justify-end gap-2 mt-6">
-<<<<<<< HEAD
-          <button onClick={() => onResponder(false)} className={BTN_SECUNDARIO}>
-            Cancelar
-          </button>
-=======
           {!pedido.soOk && (
             <button onClick={() => onResponder(false)} className={BTN_SECUNDARIO}>
               Cancelar
             </button>
           )}
->>>>>>> 6aba7f0 (a)
           <button
             ref={btnRef}
             onClick={() => onResponder(true)}
@@ -517,8 +507,6 @@ function FolhaImpressao({ rel, subtitulo }) {
   )
 }
 
-<<<<<<< HEAD
-=======
 /* ===== TIPOS DE MANUTENÇÃO (etiqueta colorida) ===== */
 const TIPOS_MANUTENCAO = ['Preventiva', 'Corretiva', 'Inspeção', 'Instalação', 'Outro']
 const COR_TIPO = {
@@ -1131,7 +1119,6 @@ function ModalConfigCustos({ onFechar, onSucesso }) {
   )
 }
 
->>>>>>> 6aba7f0 (a)
 export default function App() {
   // 1. ESTADO DA APLICAÇÃO (Ligado ao SQLite)
   const [empresas, setEmpresas] = useState([])
@@ -1170,8 +1157,6 @@ export default function App() {
   // Senha / edição protegida
   const [chapaDesbloqueada, setChapaDesbloqueada] = useState(null) // id da máquina desbloqueada
   const [isAlterarSenhaOpen, setAlterarSenhaOpen] = useState(false)
-<<<<<<< HEAD
-=======
   const [isConfigCustosOpen, setConfigCustosOpen] = useState(false)
 
   // Onde estão os dados (sempre visível no rodapé da barra lateral)
@@ -1179,16 +1164,12 @@ export default function App() {
   const [ocupado, setOcupado] = useState(null) // texto do aviso «a trabalhar…»
   const [versaoRegistos, setVersaoRegistos] = useState(0) // atualiza a vista da empresa
   const voltarEmpresaRef = useRef(false) // registo aberto a partir da vista da empresa
->>>>>>> 6aba7f0 (a)
 
   // Folha A4: modo, data escolhida pelo utilizador e impressão a partir da lista
   const [modoFolha, setModoFolha] = useState('novo') // 'novo' | 'leitura' | 'edicao'
   const [dataRegisto, setDataRegisto] = useState('')
-<<<<<<< HEAD
-=======
   const [tecnicoRegisto, setTecnicoRegisto] = useState('')
   const [tipoRegisto, setTipoRegisto] = useState('Preventiva')
->>>>>>> 6aba7f0 (a)
   const [relImprimir, setRelImprimir] = useState(null)
   const dataRef = useRef(null)
   const subtituloRef = useRef(null)
@@ -1229,11 +1210,7 @@ export default function App() {
     setToast({ mensagem, tipo })
     // Cancela o temporizador anterior para não fechar o toast novo antes do tempo
     clearTimeout(toastTimerRef.current)
-<<<<<<< HEAD
-    toastTimerRef.current = setTimeout(() => setToast(null), tipo === 'erro' ? 6000 : 3500)
-=======
     toastTimerRef.current = setTimeout(() => setToast(null), tipo === 'sucesso' ? 3500 : 7000)
->>>>>>> 6aba7f0 (a)
   }
 
   // Confirmações (substituem o window.confirm)
@@ -1327,8 +1304,6 @@ export default function App() {
       } finally {
         estadoProntoRef.current = true
       }
-<<<<<<< HEAD
-=======
       try {
         const info = await window.api.getAppInfo()
         if (!ativo) return
@@ -1345,7 +1320,6 @@ export default function App() {
       } catch {
         // não é crítico
       }
->>>>>>> 6aba7f0 (a)
     })()
     return () => {
       ativo = false
@@ -1537,18 +1511,11 @@ export default function App() {
     if (aGravarRef.current) return
     aGravarRef.current = true
     try {
-<<<<<<< HEAD
-      await window.api.updateEmpresa(empresaRenomear.id, nome, senhaRenomear)
-      fecharRenomearEmpresa()
-      await carregarDados()
-      mostrarToast('Empresa renomeada', 'sucesso')
-=======
       const r = await window.api.updateEmpresa(empresaRenomear.id, nome, senhaRenomear)
       fecharRenomearEmpresa()
       await carregarDados()
       if (r?.aviso) mostrarToast(r.aviso, 'aviso')
       else mostrarToast('Empresa renomeada', 'sucesso')
->>>>>>> 6aba7f0 (a)
     } catch (error) {
       setErroRenomear(limparErro(error))
       setSenhaRenomear('')
@@ -1632,9 +1599,6 @@ export default function App() {
   const handleBackup = async () => {
     setMenuOpen(false)
     try {
-<<<<<<< HEAD
-      const r = await window.api.fazerBackup()
-=======
       const pedido = window.api.fazerBackup()
       // o aviso só aparece depois de escolher o ficheiro (enquanto o zip é criado)
       const t = setTimeout(() => setOcupado('A criar a cópia de segurança…'), 400)
@@ -1642,16 +1606,12 @@ export default function App() {
         clearTimeout(t)
         setOcupado(null)
       })
->>>>>>> 6aba7f0 (a)
       if (r.sucesso) {
         const nome = r.caminho.split(/[\\/]/).pop()
         mostrarToast(`Cópia de segurança guardada: ${nome}`, 'sucesso')
       }
     } catch (error) {
-<<<<<<< HEAD
-=======
       setOcupado(null)
->>>>>>> 6aba7f0 (a)
       mostrarToast('Erro ao fazer a cópia: ' + limparErro(error), 'erro')
     }
   }
@@ -1666,17 +1626,6 @@ export default function App() {
       return
     }
     if (escolha.cancelado) return
-<<<<<<< HEAD
-    const ok = await pedirSenha({
-      titulo: 'Restaurar cópia de segurança',
-      mensagem:
-        `Restaurar a cópia «${escolha.nome}»?\n` +
-        `Contém ${escolha.empresas} empresa(s), ${escolha.maquinas} máquina(s) e ${escolha.relatorios} registo(s).\n\n` +
-        'Os dados atuais serão substituídos por esta cópia. Antes disso, é guardada automaticamente uma cópia dos dados atuais na pasta das cópias de segurança.',
-      textoBotao: 'Restaurar',
-      perigo: true,
-      acao: (senha) => window.api.restaurarBackup(escolha.caminho, senha)
-=======
     const conteudo =
       `Contém ${escolha.empresas} empresa(s), ${escolha.maquinas} máquina(s) e ${escolha.relatorios} registo(s)` +
       (escolha.tipo === 'zip' ? ` e ${escolha.ficheiros} documento(s).` : '.')
@@ -1699,7 +1648,6 @@ export default function App() {
           setOcupado(null)
         }
       }
->>>>>>> 6aba7f0 (a)
     })
     if (!ok) return
     setChapaDesbloqueada(null)
@@ -1708,10 +1656,7 @@ export default function App() {
     setRelatorios([])
     setPesquisa('')
     setOpenFolders({})
-<<<<<<< HEAD
-=======
     setVersaoRegistos((v) => v + 1)
->>>>>>> 6aba7f0 (a)
     await carregarDados()
     mostrarToast('Cópia de segurança restaurada', 'sucesso')
   }
@@ -1740,11 +1685,8 @@ export default function App() {
     })
     setTituloTexto(`MANUTENÇÃO ${activeMachine.nome.toUpperCase()}`)
     setDataRegisto('')
-<<<<<<< HEAD
-=======
     setTecnicoRegisto('')
     setTipoRegisto('Preventiva')
->>>>>>> 6aba7f0 (a)
     setModoFolha('novo')
     setA4ModalOpen(true)
   }
@@ -1753,17 +1695,12 @@ export default function App() {
     setRelatorioAtual(rel)
     setTituloTexto(rel.titulo || '')
     setDataRegisto(rel.data || '')
-<<<<<<< HEAD
-=======
     setTecnicoRegisto(rel.tecnico || '')
     setTipoRegisto(rel.tipo_manutencao || 'Preventiva')
->>>>>>> 6aba7f0 (a)
     setModoFolha('leitura')
     setA4ModalOpen(true)
   }
 
-<<<<<<< HEAD
-=======
   // Abrir um registo a partir da tabela da vista da empresa
   const abrirRegistoDaEmpresa = async (linha) => {
     try {
@@ -1787,7 +1724,6 @@ export default function App() {
     }
   }
 
->>>>>>> 6aba7f0 (a)
   const handleEditarRegisto = async () => {
     if (!relatorioAtual?.id) return
     const id = relatorioAtual.id
@@ -1852,13 +1788,9 @@ export default function App() {
     return (
       titulo !== (relatorioAtual.titulo || '') ||
       corpo !== corpoInicialRef.current ||
-<<<<<<< HEAD
-      dataRegisto !== (relatorioAtual.data || '')
-=======
       dataRegisto !== (relatorioAtual.data || '') ||
       tecnicoRegisto !== (relatorioAtual.tecnico || '') ||
       tipoRegisto !== (relatorioAtual.tipo_manutencao || 'Preventiva')
->>>>>>> 6aba7f0 (a)
     )
   }
 
@@ -1871,11 +1803,7 @@ export default function App() {
       if (!sair) return
     }
     if (relatorioAtual?.id) window.api.bloquear('relatorio').catch(() => {})
-<<<<<<< HEAD
-    setA4ModalOpen(false)
-=======
     fecharFolha()
->>>>>>> 6aba7f0 (a)
   }
 
   const exigirData = () => {
@@ -1885,12 +1813,8 @@ export default function App() {
     return false
   }
 
-<<<<<<< HEAD
-  const handleSaveRelatorio = async () => {
-=======
   // manterAberto = «Aplicar»: grava e continua no registo (para anexar documentos, etc.)
   const handleSaveRelatorio = async (manterAberto = false) => {
->>>>>>> 6aba7f0 (a)
     if (!activeMachine || !relatorioAtual || modoFolha === 'leitura') return
     if (!exigirData()) return
     if (dataRegisto > hojeLocal()) {
@@ -1900,9 +1824,6 @@ export default function App() {
 
     const titulo = tituloRef.current?.value.trim() || 'REGISTO SEM TÍTULO'
     const corpo = editorRef.current?.innerHTML || ''
-<<<<<<< HEAD
-    const dadosGuardar = { ...relatorioAtual, data: dataRegisto, titulo, corpo }
-=======
     const dadosGuardar = {
       ...relatorioAtual,
       data: dataRegisto,
@@ -1912,7 +1833,6 @@ export default function App() {
       tipo_manutencao: tipoRegisto,
       manterAberto
     }
->>>>>>> 6aba7f0 (a)
 
     try {
       const r = await window.api.saveRelatorio(activeMachine.id, dadosGuardar)
@@ -1949,10 +1869,7 @@ export default function App() {
     })
     if (!ok) return
     mostrarToast('Registo eliminado', 'sucesso')
-<<<<<<< HEAD
-=======
     setVersaoRegistos((v) => v + 1)
->>>>>>> 6aba7f0 (a)
     carregarRelatorios(activeMachine.id)
   }
 
@@ -2005,12 +1922,8 @@ export default function App() {
       // Grava só o campo alterado (evita que duas edições seguidas se sobreponham)
       const r = await window.api.updateCampoMaquina(activeMachine.id, campo, valor)
       await carregarDados()
-<<<<<<< HEAD
-      mostrarToast('Alteração guardada', 'sucesso')
-=======
       if (r?.aviso) mostrarToast(r.aviso, 'aviso')
       else mostrarToast('Alteração guardada', 'sucesso')
->>>>>>> 6aba7f0 (a)
     } catch (error) {
       mostrarToast('Erro ao guardar: ' + limparErro(error), 'erro')
     }
@@ -2155,14 +2068,6 @@ export default function App() {
                 {/* Linha da Empresa */}
                 <div className="group flex items-center rounded-md hover:bg-slate-100 focus-within:bg-slate-100 transition">
                   <button
-<<<<<<< HEAD
-                    onClick={() => toggleFolder(empresa.id)}
-                    aria-expanded={aberta}
-                    title={empresa.nome}
-                    className="flex items-center flex-1 min-w-0 px-2 py-2 text-left text-[15px] font-semibold text-slate-800 rounded-md"
-                  >
-                    <i
-=======
                     onClick={() => selecionarEmpresa(empresa.id)}
                     aria-expanded={aberta}
                     aria-current={temMaquinaAtiva && !activeMachineId ? 'page' : undefined}
@@ -2174,7 +2079,6 @@ export default function App() {
                         e.stopPropagation()
                         toggleFolder(empresa.id)
                       }}
->>>>>>> 6aba7f0 (a)
                       className={`fa-solid fa-chevron-down tree-caret text-[11px] text-slate-400 w-4 shrink-0 ${!aberta ? 'collapsed' : ''}`}
                     ></i>
                     <i
@@ -2287,10 +2191,7 @@ export default function App() {
                 {[
                   ['fa-floppy-disk', 'Fazer cópia de segurança', 'backup'],
                   ['fa-clock-rotate-left', 'Restaurar cópia de segurança', 'restaurar'],
-<<<<<<< HEAD
-=======
                   ['fa-calculator', 'Configuração de custos', 'custos'],
->>>>>>> 6aba7f0 (a)
                   ['fa-key', 'Alterar senha', 'senha'],
                   ['fa-circle-info', 'Acerca da aplicação', 'acerca']
                 ].map(([icone, texto, acao], i) => (
@@ -2304,12 +2205,9 @@ export default function App() {
                       else if (acao === 'senha') {
                         setMenuOpen(false)
                         setAlterarSenhaOpen(true)
-<<<<<<< HEAD
-=======
                       } else if (acao === 'custos') {
                         setMenuOpen(false)
                         setConfigCustosOpen(true)
->>>>>>> 6aba7f0 (a)
                       } else abrirAcerca()
                     }}
                     className="w-full flex items-center gap-3 px-4 py-2.5 text-left text-[15px] text-slate-700 hover:bg-slate-100 focus:bg-slate-100 outline-none"
@@ -2351,22 +2249,6 @@ export default function App() {
       <main className="flex-1 min-w-0 flex flex-col h-full bg-slate-100 relative print:hidden">
         {/* Header Superior */}
         <header className="min-h-16 py-2 border-b border-slate-200 flex items-center px-5 lg:px-8 gap-4 justify-between bg-white shrink-0 print:hidden">
-<<<<<<< HEAD
-          <div className="min-w-0">
-            <h2 className="text-xl lg:text-2xl font-bold text-slate-900 truncate leading-tight">
-              {activeMachine ? activeMachine.nome : 'Nenhuma máquina selecionada'}
-            </h2>
-            <p className="text-sm text-slate-500 truncate">
-              {activeCompany ? (
-                <>
-                  <i className="fa-solid fa-building mr-1.5 text-slate-400"></i>
-                  {activeCompany.nome}
-                </>
-              ) : (
-                'Selecione uma máquina no menu à esquerda'
-              )}
-            </p>
-=======
           <div className="flex items-center gap-3 min-w-0">
             {activeMachine ? (
               <BotaoMais titulo="Novo registo" onClick={handleAbrirNovoRelatorio} />
@@ -2407,7 +2289,6 @@ export default function App() {
                 )}
               </p>
             </div>
->>>>>>> 6aba7f0 (a)
           </div>
           {activeMachine && (
             <button
@@ -2429,9 +2310,6 @@ export default function App() {
 
         {/* Área de Conteúdo */}
         <div className="flex-1 overflow-y-auto p-5 lg:p-8 print:hidden">
-<<<<<<< HEAD
-          {!activeMachine ? (
-=======
           {!activeMachine && activeCompany ? (
             <VistaEmpresa
               empresa={activeCompany}
@@ -2440,7 +2318,6 @@ export default function App() {
               onErro={(m) => mostrarToast(m, 'erro')}
             />
           ) : !activeMachine ? (
->>>>>>> 6aba7f0 (a)
             /* Estado Vazio */
             <div className="h-full flex flex-col items-center justify-center text-center px-4">
               <img src={logoSimbolo} alt="" className="w-24 h-24 mb-5 drop-shadow-sm" />
@@ -2451,11 +2328,7 @@ export default function App() {
               <p className="text-base text-slate-600 max-w-md">
                 {empresas.length === 0
                   ? 'Comece por adicionar a primeira empresa (cliente) no botão «Adicionar Empresa», em baixo à esquerda.'
-<<<<<<< HEAD
-                  : 'Escolha uma máquina na lista à esquerda, ou adicione uma nova empresa.'}
-=======
                   : 'Escolha uma empresa (para ver os meses) ou uma máquina na lista à esquerda.'}
->>>>>>> 6aba7f0 (a)
               </p>
             </div>
           ) : (
@@ -2528,11 +2401,7 @@ export default function App() {
 
                 {/* BLOCO 2: ALIMENTAÇÃO */}
                 <h3 className="text-center font-bold tracking-[0.2em] text-slate-300 mt-6 mb-6 border-b border-slate-600 pb-2 text-sm @lg:text-base">
-<<<<<<< HEAD
-                  CARACTERÍSTICAS DE ALIMENTACIÓN
-=======
                   CARACTERÍSTICAS DE ALIMENTAÇÃO
->>>>>>> 6aba7f0 (a)
                 </h3>
 
                 <div className="grid grid-cols-1 @3xl:grid-cols-3 gap-6 pb-2">
@@ -2653,12 +2522,8 @@ export default function App() {
                                           <span className="tabular-nums text-slate-500 mr-2 shrink-0">
                                             {formatarData(rel.data)}
                                           </span>
-<<<<<<< HEAD
-                                          <span className="truncate">{rel.titulo}</span>
-=======
                                           <span className="truncate mr-2">{rel.titulo}</span>
                                           <BadgeTipo tipo={rel.tipo_manutencao} />
->>>>>>> 6aba7f0 (a)
                                         </button>
                                         <button
                                           onClick={() => handleImprimirDaLista(rel)}
@@ -2829,11 +2694,7 @@ export default function App() {
             const tecla = e.key.toLowerCase()
             if ((e.ctrlKey || e.metaKey) && tecla === 's') {
               e.preventDefault()
-<<<<<<< HEAD
-              if (folhaEditavel) handleSaveRelatorio()
-=======
               if (folhaEditavel) handleSaveRelatorio(false)
->>>>>>> 6aba7f0 (a)
             } else if ((e.ctrlKey || e.metaKey) && tecla === 'p') {
               e.preventDefault()
               handleImprimir()
@@ -2852,11 +2713,7 @@ export default function App() {
               >
                 <i className="fa-solid fa-arrow-left mr-2"></i>Voltar
               </button>
-<<<<<<< HEAD
-              <span className="hidden md:inline text-sm text-gray-300 font-semibold truncate">
-=======
               <span className="hidden md:inline text-sm text-slate-300 font-semibold truncate">
->>>>>>> 6aba7f0 (a)
                 {modoFolha === 'novo'
                   ? 'Novo Registo'
                   : modoFolha === 'edicao'
@@ -2869,11 +2726,7 @@ export default function App() {
                 <button
                   onClick={handleEditarRegisto}
                   title="Alterar este registo (pede a senha)"
-<<<<<<< HEAD
-                  className="bg-amber-600 hover:bg-amber-500 px-4 py-2 rounded text-sm font-bold shadow transition"
-=======
                   className="bg-accent-500 hover:bg-accent-400 text-slate-900 px-4 py-2 rounded-md text-sm font-semibold shadow-sm transition"
->>>>>>> 6aba7f0 (a)
                 >
                   <i className="fa-solid fa-pen mr-2"></i>Editar
                 </button>
@@ -2882,35 +2735,19 @@ export default function App() {
                 onClick={handleImprimir}
                 disabled={!dataRegisto}
                 title="Imprimir (Ctrl+P)"
-<<<<<<< HEAD
-                className="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded text-sm font-bold shadow transition disabled:opacity-40 disabled:cursor-not-allowed"
-=======
                 className="bg-white/10 hover:bg-white/20 ring-1 ring-inset ring-white/15 px-4 py-2 rounded-md text-sm font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed"
->>>>>>> 6aba7f0 (a)
               >
                 <i className="fa-solid fa-print mr-2"></i>Imprimir
               </button>
               <button
                 onClick={handleExportarPDF}
                 disabled={!dataRegisto}
-<<<<<<< HEAD
-                className="bg-red-600 hover:bg-red-500 px-4 py-2 rounded text-sm font-bold shadow transition disabled:opacity-40 disabled:cursor-not-allowed"
-=======
                 className="bg-white/10 hover:bg-white/20 ring-1 ring-inset ring-white/15 px-4 py-2 rounded-md text-sm font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed"
->>>>>>> 6aba7f0 (a)
               >
                 <i className="fa-solid fa-file-pdf mr-2"></i>Exportar PDF
               </button>
               {folhaEditavel && (
                 <button
-<<<<<<< HEAD
-                  onClick={handleSaveRelatorio}
-                  disabled={!dataRegisto}
-                  title="Guardar (Ctrl+S)"
-                  className="bg-green-600 hover:bg-green-500 px-4 lg:px-6 py-2 rounded text-sm font-bold shadow transition disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  <i className="fa-solid fa-floppy-disk mr-2"></i>Guardar
-=======
                   onClick={() => handleSaveRelatorio(true)}
                   disabled={!dataRegisto}
                   title="Grava e continua no registo"
@@ -2927,7 +2764,6 @@ export default function App() {
                   className="bg-brand-500 hover:bg-brand-400 px-4 lg:px-6 py-2 rounded-md text-sm font-semibold shadow-sm transition disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   <i className="fa-solid fa-floppy-disk mr-2"></i>Gravar
->>>>>>> 6aba7f0 (a)
                 </button>
               )}
             </div>
@@ -2940,9 +2776,6 @@ export default function App() {
             reais (com divs em display:table o texto ficava por baixo do rodapé).
             Em ecrã as partes da tabela são mostradas como blocos/flex normais.
           */}
-<<<<<<< HEAD
-          <div className="folha-a4-pagina folha-original w-[210mm] max-w-[calc(100%-1rem)] min-h-[297mm] bg-white shadow-2xl mx-auto mt-20 flex flex-col p-[12mm] lg:p-[20mm] relative">
-=======
           {/* Dados do registo e documentos — só no ecrã, não sai na impressão */}
           <details
             open
@@ -3006,7 +2839,6 @@ export default function App() {
           </details>
 
           <div className="folha-a4-pagina folha-original w-[210mm] max-w-[calc(100%-1rem)] min-h-[297mm] bg-white shadow-2xl mx-auto flex flex-col p-[12mm] lg:p-[20mm] relative">
->>>>>>> 6aba7f0 (a)
             {/* Data da intervenção (obrigatória) — controlo de ecrã, não sai na impressão */}
             {folhaEditavel && (
               <div
@@ -3231,8 +3063,6 @@ export default function App() {
             </table>
 
             <RodapeFolha />
-<<<<<<< HEAD
-=======
           </div>
         </div>
       )}
@@ -3279,47 +3109,15 @@ export default function App() {
                 Pode demorar alguns minutos se houver muitos documentos.
               </p>
             </div>
->>>>>>> 6aba7f0 (a)
           </div>
         </div>
       )}
 
-<<<<<<< HEAD
-      {/* Folha só para impressão (ícone «Imprimir» da lista de registos) */}
-      {relImprimir && !isA4ModalOpen && (
-        <FolhaImpressao rel={relImprimir} subtitulo={configSubtitulo} />
-      )}
-
-      {pedidoSenha && (
-        <ModalSenha key={pedidoSenha.id} pedido={pedidoSenha} onConcluir={concluirPedidoSenha} />
-      )}
-
-      {isAlterarSenhaOpen && (
-        <ModalAlterarSenha
-          onFechar={() => setAlterarSenhaOpen(false)}
-          onSucesso={() => {
-            setAlterarSenhaOpen(false)
-            mostrarToast('Senha alterada', 'sucesso')
-          }}
-        />
-      )}
-
-      <ConfirmModal pedido={pedidoConfirmacao} onResponder={responderConfirmacao} />
-
-=======
->>>>>>> 6aba7f0 (a)
       {/* ================= TOAST (NOTIFICAÇÃO) ================= */}
       {toast && (
         <div
           role="status"
           className={`fixed bottom-6 right-6 z-[110] max-w-[min(32rem,calc(100%-3rem))] px-4 py-3 rounded-lg shadow-xl text-white text-[15px] font-semibold flex items-center gap-3 animar-entrada print:hidden ${
-<<<<<<< HEAD
-            toast.tipo === 'erro' ? 'bg-danger-600' : 'bg-brand-900'
-          }`}
-        >
-          <i
-            className={`fa-solid ${toast.tipo === 'erro' ? 'fa-triangle-exclamation' : 'fa-circle-check text-ok-400'}`}
-=======
             toast.tipo === 'erro'
               ? 'bg-danger-600'
               : toast.tipo === 'aviso'
@@ -3329,7 +3127,6 @@ export default function App() {
         >
           <i
             className={`fa-solid ${toast.tipo === 'sucesso' ? 'fa-circle-check text-ok-400' : 'fa-triangle-exclamation'}`}
->>>>>>> 6aba7f0 (a)
           ></i>
           <span className="break-words min-w-0">{toast.mensagem}</span>
         </div>
