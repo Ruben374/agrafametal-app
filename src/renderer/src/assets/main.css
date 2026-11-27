@@ -8,21 +8,6 @@
    - ok / warn / danger : estados (sucesso, aviso, ações destrutivas)
    Para mudar a paleta basta alterar os valores abaixo. */
 @theme {
-<<<<<<< HEAD
-  --font-sans: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
-
-  --color-brand-50: #eef3f8;
-  --color-brand-100: #d9e3ee;
-  --color-brand-200: #b5c8dc;
-  --color-brand-300: #88a6c4;
-  --color-brand-400: #5a82a8;
-  --color-brand-500: #3d668e;
-  --color-brand-600: #2e5276;
-  --color-brand-700: #244262;
-  --color-brand-800: #1c3450;
-  --color-brand-900: #142740;
-  --color-brand-950: #0c1a2c;
-=======
   /* Tipo de letra da interface (a folha A4 do relatório mantém o seu próprio tipo de letra) */
   --font-sans: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
 
@@ -50,7 +35,6 @@
   --color-slate-700: #353c4a;
   --color-slate-800: #1f2532;
   --color-slate-900: #121722;
->>>>>>> 6aba7f0 (a)
 
   --color-accent-50: #fff8eb;
   --color-accent-100: #feedc7;
@@ -62,30 +46,19 @@
   --color-accent-700: #92500a;
 
   --color-ok-50: #ecf8f1;
-<<<<<<< HEAD
-=======
   --color-ok-100: #d3f0df;
   --color-ok-200: #a9e1c2;
->>>>>>> 6aba7f0 (a)
   --color-ok-400: #4cc184;
   --color-ok-600: #1f8a4c;
   --color-ok-700: #186e3c;
 
   --color-warn-50: #fff7e6;
-<<<<<<< HEAD
-=======
   --color-warn-100: #fdebc8;
   --color-warn-300: #f5c46a;
->>>>>>> 6aba7f0 (a)
   --color-warn-600: #b45309;
 
   --color-danger-50: #fdf0f0;
   --color-danger-100: #fbdcdc;
-<<<<<<< HEAD
-  --color-danger-500: #dc3a3a;
-  --color-danger-600: #c62828;
-  --color-danger-700: #a31f1f;
-=======
   --color-danger-200: #f6b8b8;
   --color-danger-300: #ef8f8f;
   --color-danger-500: #dc3a3a;
@@ -105,7 +78,6 @@
   --shadow-lg: 0 8px 16px -4px rgb(16 24 40 / 0.1), 0 2px 6px -2px rgb(16 24 40 / 0.05);
   --shadow-xl: 0 16px 28px -8px rgb(16 24 40 / 0.14), 0 4px 8px -4px rgb(16 24 40 / 0.06);
   --shadow-2xl: 0 24px 48px -12px rgb(16 24 40 / 0.25);
->>>>>>> 6aba7f0 (a)
 }
 
 html {

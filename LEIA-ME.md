@@ -2,32 +2,15 @@
 
 ## 1. Qual dos ficheiros usar?
 
-<<<<<<< HEAD
-**Disco externo, para usar em vários computadores:** `Agrafametal-1.1.0-portable.exe`
-
-- Não precisa de instalar nada.
-- Copie o ficheiro para uma pasta no disco externo, por exemplo `E:\Agrafametal\`.
-- Abra-o com duplo clique. Na primeira vez é criada, ao lado do programa, a pasta `dados`, onde fica toda a informação.
-=======
 **Disco externo, para usar em vários computadores:** `Agrafametal-1.2.0-portable.exe`
 
 - Não precisa de instalar nada.
 - Copie o ficheiro para uma pasta no disco externo, por exemplo `E:\Agrafametal\`.
 - Abra-o com duplo clique. Na primeira vez a aplicação pergunta se quer **criar uma base de dados nova**: confirme. É criada, ao lado do programa, a pasta `dados`, onde fica toda a informação.
->>>>>>> 6aba7f0 (a)
 - Ligue o disco a qualquer computador com Windows e abra o mesmo ficheiro: verá sempre os mesmos dados.
 
 ```
 E:\Agrafametal\
-<<<<<<< HEAD
-   Agrafametal-1.1.0-portable.exe
-   dados\
-      agrafametal.db      (a informação)
-      backups\            (cópias de segurança)
-```
-
-**Um só computador fixo:** `Agrafametal-1.1.0-setup.exe`
-=======
    Agrafametal-1.2.0-portable.exe
    dados\
       agrafametal.db      (a informação)
@@ -48,7 +31,6 @@ E:\Agrafametal\
 > pasta `dados` está mesmo ao lado do programa.
 
 **Um só computador fixo:** `Agrafametal-1.2.0-setup.exe`
->>>>>>> 6aba7f0 (a)
 
 - Instala a aplicação e cria um atalho no ambiente de trabalho e no menu Iniciar.
 - Os dados ficam guardados nesse computador.
@@ -71,15 +53,6 @@ Este aviso só aparece na primeira vez em cada computador.
 - **Feche sempre a aplicação antes de desligar o disco.**
 - **Para mudar de sítio, mova a pasta inteira (programa + pasta `dados`).**
 - Abra a aplicação apenas uma vez de cada vez. Se já estiver aberta, a janela existente passa para a frente.
-<<<<<<< HEAD
-
-## 4. Onde estão os dados?
-
-No menu **⋮** (canto inferior esquerdo), escolha **«Acerca da aplicação»**. Aí vê:
-
-- O modo em uso: «Portátil — dados no disco» ou «Instalado — dados neste computador».
-- A pasta exata onde estão os dados, com o botão **«Abrir pasta»**.
-=======
 - **Disco protegido contra escrita:** se o disco estiver só de leitura (ou o Windows bloquear a escrita), a aplicação avisa e deixa abrir **só para consulta**. Nesse modo aparece uma barra vermelha no topo e nada é gravado.
 
 ## 4. Onde estão os dados?
@@ -91,30 +64,20 @@ Se aparecer «Instalado» quando devia aparecer «Portátil», está a trabalhar
 computador e não com os do disco: feche e abra o programa portátil do disco.
 
 Mais detalhes no menu **⋮** (canto inferior esquerdo) → **«Acerca da aplicação»**.
->>>>>>> 6aba7f0 (a)
 
 ## 5. Cópias de segurança
 
 **Fazer uma cópia:** menu **⋮** → **«Fazer cópia de segurança»**.
 
-<<<<<<< HEAD
-- Por defeito, a cópia é guardada em `dados\backups\` com a data e a hora no nome.
-=======
 - A cópia é um ficheiro **.zip** com a base de dados **e** a pasta `registos` (documentos e folhas de custos).
 - Por defeito, a cópia é guardada em `dados\backups\` com a data e a hora no nome.
 - Com muitos documentos pode demorar um pouco: aparece o aviso «A criar a cópia de segurança…».
->>>>>>> 6aba7f0 (a)
 - Recomendação: faça uma cópia regularmente e guarde-a também noutro sítio (outra pen, outro disco ou um serviço na nuvem).
 
 **Restaurar uma cópia:** menu **⋮** → **«Restaurar cópia de segurança»**.
 
-<<<<<<< HEAD
-- Escolha o ficheiro `.db` da cópia.
-- A aplicação mostra quantas empresas, máquinas e registos a cópia contém e pede confirmação.
-=======
 - Escolha o ficheiro `.zip` da cópia. As cópias antigas (`.db`, das versões anteriores) também são aceites: nesse caso só a base de dados é substituída e as pastas dos registos ficam como estão.
 - A aplicação mostra quantas empresas, máquinas, registos e documentos a cópia contém e pede confirmação.
->>>>>>> 6aba7f0 (a)
 - Antes de restaurar, guarda automaticamente uma cópia dos dados atuais (`Antes_do_restauro_…`). Por isso, um restauro feito por engano pode ser desfeito.
 
 ## 6. Senha de proteção
@@ -127,10 +90,7 @@ pessoas não autorizadas. A senha é entregue à parte, pelo responsável pela a
 - Consultar, pesquisar, imprimir e exportar PDF.
 - Fazer uma cópia de segurança.
 - Criar: adicionar empresas, máquinas e registos de manutenção novos. Um registo novo pode ser escrito à vontade até ser guardado pela primeira vez.
-<<<<<<< HEAD
-=======
 - Anexar documentos a um registo e criar a folha de custos.
->>>>>>> 6aba7f0 (a)
 
 **Precisa de senha:**
 
@@ -140,11 +100,8 @@ pessoas não autorizadas. A senha é entregue à parte, pelo responsável pela a
 - Alterar um registo já guardado (texto, título ou data).
 - Alterar o texto do cabeçalho da folha.
 - Restaurar uma cópia de segurança.
-<<<<<<< HEAD
-=======
 - Remover um documento de um registo.
 - Alterar a configuração de custos.
->>>>>>> 6aba7f0 (a)
 
 **Botões «Editar»:**
 
@@ -161,24 +118,15 @@ Se esquecer a senha, contacte o responsável pela aplicação. Os dados não se 
 - **Adicionar empresa:** botão «Adicionar Empresa», em baixo à esquerda.
 - **Adicionar máquina, renomear ou remover empresa:** passe o rato sobre o nome da empresa e use os botões **+**, **lápis** e **caixote do lixo**.
 - **Pesquisar:** escreva no campo «Pesquisar…» no topo da lista. Não é preciso acentos («maquina» encontra «Máquina»). A tecla Esc limpa a pesquisa.
-<<<<<<< HEAD
-- **Registo de manutenção novo:** botão «Criar Registo Diário».
-  - Primeiro escolha a **data da intervenção**. É obrigatória e não pode ser no futuro.
-  - Só depois de escolher a data é possível escrever, guardar, imprimir ou exportar.
-  - Use «Guardar» (ou Ctrl+S).
-=======
 - **Registo de manutenção novo:** botão **+** redondo ao lado do nome da máquina (ou «Criar Registo Diário»).
   - Primeiro escolha a **data da intervenção**. É obrigatória e não pode ser no futuro.
   - Indique o **técnico** e o **tipo de manutenção** (Preventiva, Corretiva, Inspeção…) no quadro «Documentos e custos», por cima da folha.
   - Só depois de escolher a data é possível escrever, gravar, imprimir ou exportar.
   - **«Gravar»** (ou Ctrl+S) grava e fecha. **«Aplicar»** grava e deixa o registo aberto, por exemplo para logo a seguir anexar documentos ou criar a folha de custos.
->>>>>>> 6aba7f0 (a)
 - **Imprimir:** dentro do registo, botão **«Imprimir»** (ou Ctrl+P). Na lista de registos, o ícone da **impressora** imprime sem abrir o registo. Abre-se a janela normal de impressão, onde escolhe a impressora e o número de cópias.
 - **Exportar PDF:** dentro do registo, botão «Exportar PDF».
 
 A aplicação lembra-se da última máquina aberta e do tamanho da janela.
-<<<<<<< HEAD
-=======
 
 
 ## 8. Pastas por mês (vista da empresa)
@@ -248,4 +196,3 @@ Os nomes que não existirem no modelo são simplesmente ignorados.
 As palavras com erro ficam sublinhadas a vermelho (português de Portugal). Com o **botão direito**
 sobre a palavra aparecem sugestões e «Adicionar ao dicionário». O mesmo menu tem Cortar, Copiar,
 Colar e Selecionar tudo.
->>>>>>> 6aba7f0 (a)

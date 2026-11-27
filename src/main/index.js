@@ -1,8 +1,3 @@
-<<<<<<< HEAD
-import { app, shell, BrowserWindow, ipcMain, dialog, screen } from 'electron'
-import { join, dirname, basename, resolve } from 'path'
-import { existsSync, mkdirSync, copyFileSync, writeFileSync, unlinkSync, renameSync } from 'fs'
-=======
 import { app, shell, BrowserWindow, ipcMain, dialog, screen, Menu } from 'electron'
 import { join, dirname, basename, resolve, extname, sep } from 'path'
 import {
@@ -16,7 +11,6 @@ import {
   statSync,
   rmSync
 } from 'fs'
->>>>>>> 6aba7f0 (a)
 import { scryptSync, randomBytes, timingSafeEqual } from 'crypto'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
@@ -28,11 +22,6 @@ let db
 let dbPath
 let dadosDir
 let modoDados // 'portatil' | 'instalado' | 'desenvolvimento'
-<<<<<<< HEAD
-
-const TABELAS_OBRIGATORIAS = ['config', 'empresas', 'maquinas', 'relatorios']
-
-=======
 let somenteLeitura = false // disco protegido contra escrita: só consulta
 let bdNova = false // a base de dados foi criada neste arranque
 
@@ -48,7 +37,6 @@ function exigirEscrita() {
   }
 }
 
->>>>>>> 6aba7f0 (a)
 /* ================= SENHA =================
    Protege as alterações e eliminações (criar não precisa de senha).
    - Só se guarda um hash (scrypt + sal aleatório) na tabela config, nunca a senha.
@@ -153,19 +141,12 @@ function validarDataRegisto(data) {
 }
 
 /* ================= LOCALIZAÇÃO DOS DADOS =================
-<<<<<<< HEAD
-   Mesma regra para o instalador e para a versão portátil:
-   - se existir uma pasta "dados" ao lado do programa (e der para escrever lá), usa-a
-     -> uma app num disco externo guarda sempre os dados no próprio disco;
-   - senão usa a pasta do utilizador neste computador (%APPDATA%\Agrafametal\dados).
-=======
    - Versão portátil: usa SEMPRE a pasta "dados" ao lado do programa. Nunca muda em
      silêncio para a pasta do utilizador (era isso que criava uma base de dados nova,
      vazia e com a senha por defeito, quando o disco era ligado a outro PC).
      Se a pasta não existir ou não der para escrever, pergunta o que fazer.
    - Versão instalada: se existir uma pasta "dados" ao lado do programa (e der para
      escrever lá), usa-a; senão usa %APPDATA%\Agrafametal\dados.
->>>>>>> 6aba7f0 (a)
    Nunca se guardam letras de unidade (E:, F:...): o caminho é sempre relativo ao .exe. */
 
 function podeEscrever(pasta) {
@@ -180,43 +161,21 @@ function podeEscrever(pasta) {
   }
 }
 
-<<<<<<< HEAD
-=======
 // Devolve { pasta, modo, somenteLeitura? } ou null se o utilizador escolher sair
->>>>>>> 6aba7f0 (a)
 function resolverPastaDados() {
   const pastaUtilizador = join(app.getPath('userData'), 'dados')
   if (is.dev) return { pasta: pastaUtilizador, modo: 'desenvolvimento' }
 
   const pastaPortatil = process.env.PORTABLE_EXECUTABLE_DIR // definido só pela versão portátil
-<<<<<<< HEAD
-  const exeDir = pastaPortatil || dirname(app.getPath('exe'))
-  const pastaLocal = join(exeDir, 'dados')
-
-  if (pastaPortatil && !existsSync(pastaLocal)) {
-    try {
-      mkdirSync(pastaLocal, { recursive: true }) // 1.ª execução da versão portátil
-    } catch {
-      // disco só de leitura: cai para a pasta do utilizador
-    }
-  }
-
-=======
   if (pastaPortatil) return resolverPastaPortatil(join(pastaPortatil, 'dados'))
 
   const pastaLocal = join(dirname(app.getPath('exe')), 'dados')
->>>>>>> 6aba7f0 (a)
   if (existsSync(pastaLocal) && podeEscrever(pastaLocal)) {
     return { pasta: pastaLocal, modo: 'portatil' }
   }
   return { pasta: pastaUtilizador, modo: 'instalado' }
 }
 
-<<<<<<< HEAD
-/* ================= BASE DE DADOS ================= */
-
-function abrirBD(caminho) {
-=======
 function caixa(opcoes) {
   return dialog.showMessageBoxSync({ title: 'Agrafametal', noLink: true, ...opcoes })
 }
@@ -310,7 +269,6 @@ function abrirBD(caminho) {
     leitura.pragma('foreign_keys = ON')
     return leitura
   }
->>>>>>> 6aba7f0 (a)
   // timeout: se o ficheiro estiver momentaneamente ocupado, espera até 5 s em vez de falhar
   const nova = new Database(caminho, { timeout: 5000 })
   // DELETE em vez de WAL: não cria ficheiros -wal/-shm ao lado da BD,
@@ -367,8 +325,6 @@ function abrirBD(caminho) {
     END;
   `)
 
-<<<<<<< HEAD
-=======
   // v1.2: pasta de cada registo (caminho relativo à pasta de dados)
   const colunas = nova
     .prepare('PRAGMA table_info(relatorios)')
@@ -384,7 +340,6 @@ function abrirBD(caminho) {
   if (!colunasMaquinas.includes('cidade')) nova.exec('ALTER TABLE maquinas ADD COLUMN cidade TEXT')
   if (!colunasMaquinas.includes('pais')) nova.exec('ALTER TABLE maquinas ADD COLUMN pais TEXT')
 
->>>>>>> 6aba7f0 (a)
   nova
     .prepare('INSERT OR IGNORE INTO config (chave, valor) VALUES (?, ?)')
     .run('cabecalho_subtitulo', 'Serviços Reparação e Manutenção Preventiva')
@@ -396,16 +351,6 @@ function fecharBD() {
 }
 
 function initDB() {
-<<<<<<< HEAD
-  const { pasta, modo } = resolverPastaDados()
-  dadosDir = pasta
-  modoDados = modo
-  try {
-    if (!existsSync(dadosDir)) mkdirSync(dadosDir, { recursive: true })
-    dbPath = join(dadosDir, 'agrafametal.db')
-    db = abrirBD(dbPath)
-    prepararSenha()
-=======
   const escolha = resolverPastaDados()
   if (!escolha) return false // o utilizador escolheu «Sair»
   dadosDir = escolha.pasta
@@ -420,7 +365,6 @@ function initDB() {
       prepararSenha()
       prepararPastasRegistos()
     }
->>>>>>> 6aba7f0 (a)
     return true
   } catch (err) {
     dialog.showErrorBox(
@@ -474,8 +418,6 @@ function pastaBackups() {
   return pasta
 }
 
-<<<<<<< HEAD
-=======
 /* ================= PASTAS DOS REGISTOS =================
    dados/registos/<id>_<Empresa>/<ano>/<mm-Mês>/<idRegisto>_<data>_<Máquina>/
    - As 12 pastas dos meses de cada ano são criadas logo (não só quando há registos).
@@ -689,7 +631,6 @@ function ficheiroDoRegisto(id, nome) {
 
 const nomeFolhaCustos = (id) => `custos_${id}.xlsx`
 
->>>>>>> 6aba7f0 (a)
 /* ================= ESTADO DA JANELA ================= */
 
 function lerConfig(chave) {
@@ -701,11 +642,7 @@ function lerConfig(chave) {
 }
 
 function guardarEstadoJanela(win) {
-<<<<<<< HEAD
-  if (!db || !db.open || !win || win.isDestroyed()) return
-=======
   if (somenteLeitura || !db || !db.open || !win || win.isDestroyed()) return
->>>>>>> 6aba7f0 (a)
   try {
     // maximizada: guarda o tamanho "normal" para quando o utilizador a restaurar
     const b = win.isMaximized() ? win.getNormalBounds() : win.getBounds()
@@ -748,14 +685,10 @@ function registarAPI() {
   // da folha precisa de senha; a senha só se muda por app:alterarSenha.
   const CONFIG_PROTEGIDA = ['cabecalho_subtitulo']
   ipcMain.handle('db:setConfig', (event, chave, valor, senha) => {
-<<<<<<< HEAD
-    if (String(chave).startsWith('senha')) throw new Error('Chave reservada.')
-=======
     exigirEscrita()
     if (String(chave).startsWith('senha') || String(chave).startsWith('custo_')) {
       throw new Error('Chave reservada.')
     }
->>>>>>> 6aba7f0 (a)
     if (CONFIG_PROTEGIDA.includes(chave)) exigirSenha(senha)
     db.prepare(
       'INSERT INTO config (chave, valor) VALUES (?, ?) ON CONFLICT(chave) DO UPDATE SET valor = excluded.valor'
@@ -787,10 +720,7 @@ function registarAPI() {
   })
 
   ipcMain.handle('db:updateEmpresa', (event, id, nome, senha) => {
-<<<<<<< HEAD
-=======
     exigirEscrita()
->>>>>>> 6aba7f0 (a)
     exigirSenha(senha)
     const nomeLimpo = String(nome ?? '').trim()
     if (!nomeLimpo) throw new Error('Nome da empresa não pode estar vazio')
@@ -800,17 +730,12 @@ function registarAPI() {
   })
 
   // Remove a empresa; as máquinas e os registos saem em cascata (ON DELETE CASCADE)
-<<<<<<< HEAD
-  ipcMain.handle('db:deleteEmpresa', (event, id, senha) => {
-    exigirSenha(senha)
-=======
   // A pasta da empresa vai primeiro para _eliminados: se houver ficheiros abertos, nada é apagado
   ipcMain.handle('db:deleteEmpresa', (event, id, senha) => {
     exigirEscrita()
     exigirSenha(senha)
     const pasta = encontrarPastaEmpresa(id)
     if (pasta) moverParaEliminados(absoluto(pasta))
->>>>>>> 6aba7f0 (a)
     db.prepare('DELETE FROM empresas WHERE id = ?').run(id)
     return true
   })
@@ -835,10 +760,7 @@ function registarAPI() {
     })
 
   ipcMain.handle('db:updateMaquina', (event, id, d) => {
-<<<<<<< HEAD
-=======
     exigirEscrita()
->>>>>>> 6aba7f0 (a)
     exigirDesbloqueio('maquina', id)
     const stmt = db.prepare(`
       UPDATE maquinas SET
@@ -886,10 +808,7 @@ function registarAPI() {
     'pais'
   ]
   ipcMain.handle('db:updateCampoMaquina', (event, id, campo, valor) => {
-<<<<<<< HEAD
-=======
     exigirEscrita()
->>>>>>> 6aba7f0 (a)
     exigirDesbloqueio('maquina', id)
     if (!CAMPOS_MAQUINA.includes(campo)) throw new Error('Campo inválido: ' + campo)
     if (campo === 'nome' && !String(valor ?? '').trim()) {
@@ -900,15 +819,11 @@ function registarAPI() {
   })
 
   ipcMain.handle('db:deleteMaquina', (event, id, senha) => {
-<<<<<<< HEAD
-    exigirSenha(senha)
-=======
     exigirEscrita()
     exigirSenha(senha)
     db.prepare('SELECT pasta FROM relatorios WHERE maquina_id = ? AND pasta IS NOT NULL')
       .all(id)
       .forEach((r) => moverParaEliminados(absoluto(r.pasta)))
->>>>>>> 6aba7f0 (a)
     db.prepare('DELETE FROM maquinas WHERE id = ?').run(id)
     return true
   })
@@ -920,11 +835,6 @@ function registarAPI() {
       .all(maquinaId)
   })
 
-<<<<<<< HEAD
-  // Registo novo: livre (só exige a data). Registo existente: só com desbloqueio.
-  ipcMain.handle('db:saveRelatorio', (event, maquinaId, d) => {
-    validarDataRegisto(d.data)
-=======
   // Registo completo (abrir a partir da vista da empresa)
   ipcMain.handle('db:getRelatorio', (event, id) =>
     db.prepare('SELECT * FROM relatorios WHERE id = ?').get(id)
@@ -944,7 +854,6 @@ function registarAPI() {
       })
       return { id, aviso }
     }
->>>>>>> 6aba7f0 (a)
     if (d.id) {
       exigirDesbloqueio('relatorio', d.id)
       db.prepare(
@@ -957,13 +866,8 @@ function registarAPI() {
         d.corpo ?? null,
         d.id
       )
-<<<<<<< HEAD
-      desbloqueios.relatorio = null // guardado: volta a ficar protegido
-      return d.id
-=======
       if (!d.manterAberto) desbloqueios.relatorio = null // guardado: volta a ficar protegido
       return posGravar(Number(d.id))
->>>>>>> 6aba7f0 (a)
     } else {
       const info = db
         .prepare(
@@ -984,42 +888,16 @@ function registarAPI() {
     }
   })
 
-<<<<<<< HEAD
-  ipcMain.handle('db:deleteRelatorio', (event, id, senha) => {
-    exigirSenha(senha)
-=======
   // A pasta do registo (documentos, folha de custos) vai para registos/_eliminados
   ipcMain.handle('db:deleteRelatorio', (event, id, senha) => {
     exigirEscrita()
     exigirSenha(senha)
     const r = db.prepare('SELECT pasta FROM relatorios WHERE id = ?').get(id)
     if (r?.pasta) moverParaEliminados(absoluto(r.pasta))
->>>>>>> 6aba7f0 (a)
     db.prepare('DELETE FROM relatorios WHERE id = ?').run(id)
     return true
   })
 
-<<<<<<< HEAD
-  // --- CÓPIAS DE SEGURANÇA ---
-  ipcMain.handle('app:backup', async (event) => {
-    const { canceled, filePath } = await dialog.showSaveDialog(
-      BrowserWindow.fromWebContents(event.sender),
-      {
-        title: 'Guardar Cópia de Segurança',
-        defaultPath: join(pastaBackups(), `Copia_Agrafametal_${carimbo()}.db`),
-        filters: [{ name: 'Base de Dados Agrafametal', extensions: ['db'] }]
-      }
-    )
-    if (canceled || !filePath) return { sucesso: false }
-    if (resolve(filePath) === resolve(dbPath)) {
-      throw new Error('Escolha outro nome: este é o ficheiro de dados em uso.')
-    }
-    await db.backup(filePath) // cópia consistente, mesmo com a BD aberta
-    return { sucesso: true, caminho: filePath }
-  })
-
-  // Passo 1 do restauro: escolher e validar o ficheiro (ainda não altera nada)
-=======
   // --- VISTA DA EMPRESA: MESES ---
   // Número de registos por mês (todas as máquinas da empresa) num ano
   ipcMain.handle('db:getResumoMensal', (event, empresaId, ano) => {
@@ -1103,7 +981,6 @@ function registarAPI() {
 
   // Passo 1 do restauro: escolher e validar o ficheiro (ainda não altera nada)
   // Aceita o zip (v1.2) e o .db das versões anteriores
->>>>>>> 6aba7f0 (a)
   ipcMain.handle('app:escolherRestauro', async (event) => {
     const { canceled, filePaths } = await dialog.showOpenDialog(
       BrowserWindow.fromWebContents(event.sender),
@@ -1111,11 +988,7 @@ function registarAPI() {
         title: 'Restaurar Cópia de Segurança',
         defaultPath: pastaBackups(),
         properties: ['openFile'],
-<<<<<<< HEAD
-        filters: [{ name: 'Base de Dados Agrafametal', extensions: ['db'] }]
-=======
         filters: [{ name: 'Cópia de segurança Agrafametal', extensions: ['zip', 'db'] }]
->>>>>>> 6aba7f0 (a)
       }
     )
     if (canceled || !filePaths?.length) return { cancelado: true }
@@ -1123,9 +996,6 @@ function registarAPI() {
     if (resolve(caminho) === resolve(dbPath)) {
       throw new Error('Esse é o ficheiro de dados que já está em uso.')
     }
-<<<<<<< HEAD
-    return { cancelado: false, caminho, nome: basename(caminho), ...validarBD(caminho) }
-=======
     if (extname(caminho).toLowerCase() === '.zip') {
       const { ficheiros } = inspecionarZip(caminho)
       const tmp = ficheiroTemporario('validar.db')
@@ -1144,23 +1014,10 @@ function registarAPI() {
       }
     }
     return { cancelado: false, caminho, nome: basename(caminho), tipo: 'db', ...validarBD(caminho) }
->>>>>>> 6aba7f0 (a)
   })
 
   // Passo 2 do restauro (depois de o utilizador confirmar)
   ipcMain.handle('app:restaurar', async (event, caminho, senha) => {
-<<<<<<< HEAD
-    exigirSenha(senha)
-    validarBD(caminho)
-    // a senha atual mantém-se (a da cópia antiga nunca volta a valer)
-    const hashAtual = lerConfig('senha_hash')
-    // guarda primeiro os dados atuais, para se poder voltar atrás
-    const copiaAnterior = join(pastaBackups(), `Antes_do_restauro_${carimbo()}.db`)
-    await db.backup(copiaAnterior)
-
-    const temporario = dbPath + '.restauro'
-    copyFileSync(caminho, temporario)
-=======
     exigirEscrita()
     exigirSenha(senha)
     const eZip = extname(caminho).toLowerCase() === '.zip'
@@ -1206,7 +1063,6 @@ function registarAPI() {
       }
     }
 
->>>>>>> 6aba7f0 (a)
     fecharBD()
     try {
       for (const extra of ['-journal', '-wal', '-shm']) {
@@ -1219,19 +1075,6 @@ function registarAPI() {
       desbloqueios.maquina = null
       desbloqueios.relatorio = null
     } catch (err) {
-<<<<<<< HEAD
-      // algo falhou: reabre a base de dados que estava em uso
-      if (existsSync(temporario)) unlinkSync(temporario)
-      db = abrirBD(dbPath)
-      throw new Error('Não foi possível restaurar: ' + err.message)
-    }
-    return { sucesso: true, copiaAnterior }
-  })
-
-  // --- SENHA ---
-  // Desbloqueia a edição de uma máquina (chapa) ou de um registo existente
-  ipcMain.handle('auth:desbloquear', (event, tipo, id, senha) => {
-=======
       // algo falhou: volta a pôr a pasta registos e a base de dados que estavam em uso
       if (existsSync(temporario)) unlinkSync(temporario)
       if (registosTrocados) {
@@ -1396,7 +1239,6 @@ function registarAPI() {
   // Desbloqueia a edição de uma máquina (chapa) ou de um registo existente
   ipcMain.handle('auth:desbloquear', (event, tipo, id, senha) => {
     exigirEscrita()
->>>>>>> 6aba7f0 (a)
     if (!(tipo in desbloqueios)) throw new Error('Tipo inválido.')
     exigirSenha(senha)
     desbloqueios[tipo] = Number(id)
@@ -1409,10 +1251,7 @@ function registarAPI() {
   })
 
   ipcMain.handle('auth:alterarSenha', (event, atual, nova) => {
-<<<<<<< HEAD
-=======
     exigirEscrita()
->>>>>>> 6aba7f0 (a)
     exigirSenha(atual)
     const s = String(nova ?? '')
     if (s.length < 6) throw new Error('A nova senha tem de ter pelo menos 6 caracteres.')
@@ -1437,13 +1276,9 @@ function registarAPI() {
     versao: app.getVersion(),
     pastaDados: dadosDir,
     ficheiro: dbPath,
-<<<<<<< HEAD
-    modo: modoDados
-=======
     modo: modoDados,
     somenteLeitura,
     bdNova
->>>>>>> 6aba7f0 (a)
   }))
 
   ipcMain.handle('app:abrirPastaDados', () => shell.openPath(dadosDir))
@@ -1537,25 +1372,6 @@ function createWindow() {
   }
 }
 
-<<<<<<< HEAD
-/* ================= ARRANQUE ================= */
-
-// Interface em português de Portugal (ex.: calendário da data em dd/mm/aaaa em qualquer PC)
-app.commandLine.appendSwitch('lang', 'pt-PT')
-
-// Uma só instância: duas janelas a escrever na mesma base de dados não é seguro
-if (!app.requestSingleInstanceLock()) {
-  app.quit()
-} else {
-  app.on('second-instance', () => {
-    const win = BrowserWindow.getAllWindows()[0]
-    if (win) {
-      if (win.isMinimized()) win.restore()
-      win.focus()
-    }
-  })
-
-=======
 /* ================= CORRETOR ORTOGRÁFICO =================
    Português de Portugal. Palavras com erro ficam sublinhadas; o botão direito num campo
    de texto mostra sugestões, «Adicionar ao dicionário» (fica guardado neste computador)
@@ -1616,7 +1432,6 @@ if (!app.requestSingleInstanceLock()) {
     }
   })
 
->>>>>>> 6aba7f0 (a)
   app.whenReady().then(() => {
     electronApp.setAppUserModelId('pt.agrafametal.app')
     app.on('browser-window-created', (_, window) => {
