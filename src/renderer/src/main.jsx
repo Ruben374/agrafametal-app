@@ -6,6 +6,7 @@ import '@fontsource/inter/700.css'
 import '@fontsource/inter/800.css'
 import '@fortawesome/fontawesome-free/css/all.min.css'
 import './assets/main.css'
+import './assets/icons.css'
 
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'

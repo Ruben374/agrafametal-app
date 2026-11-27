@@ -8,6 +8,7 @@
    - ok / warn / danger : estados (sucesso, aviso, ações destrutivas)
    Para mudar a paleta basta alterar os valores abaixo. */
 @theme {
+<<<<<<< HEAD
   --font-sans: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
 
   --color-brand-50: #eef3f8;
@@ -21,6 +22,35 @@
   --color-brand-800: #1c3450;
   --color-brand-900: #142740;
   --color-brand-950: #0c1a2c;
+=======
+  /* Tipo de letra da interface (a folha A4 do relatório mantém o seu próprio tipo de letra) */
+  --font-sans: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+
+  /* Cor principal: azul-marinho mais vivo; o 900 é o azul do logótipo */
+  --color-brand-50: #eef3fd;
+  --color-brand-100: #dce6fa;
+  --color-brand-200: #bccdf3;
+  --color-brand-300: #8eaae6;
+  --color-brand-400: #5f84d4;
+  --color-brand-500: #3d64bf;
+  --color-brand-600: #2f50a6;
+  --color-brand-700: #27428a;
+  --color-brand-800: #213772;
+  --color-brand-900: #1c3450;
+  --color-brand-950: #111f33;
+
+  /* Cinzentos da interface (fundos, bordas, texto): mais limpos e neutros */
+  --color-slate-50: #f9fafb;
+  --color-slate-100: #f3f5f8;
+  --color-slate-200: #e6e9ef;
+  --color-slate-300: #d2d7df;
+  --color-slate-400: #9aa3b2;
+  --color-slate-500: #6b7485;
+  --color-slate-600: #4d5566;
+  --color-slate-700: #353c4a;
+  --color-slate-800: #1f2532;
+  --color-slate-900: #121722;
+>>>>>>> 6aba7f0 (a)
 
   --color-accent-50: #fff8eb;
   --color-accent-100: #feedc7;
@@ -32,18 +62,50 @@
   --color-accent-700: #92500a;
 
   --color-ok-50: #ecf8f1;
+<<<<<<< HEAD
+=======
+  --color-ok-100: #d3f0df;
+  --color-ok-200: #a9e1c2;
+>>>>>>> 6aba7f0 (a)
   --color-ok-400: #4cc184;
   --color-ok-600: #1f8a4c;
   --color-ok-700: #186e3c;
 
   --color-warn-50: #fff7e6;
+<<<<<<< HEAD
+=======
+  --color-warn-100: #fdebc8;
+  --color-warn-300: #f5c46a;
+>>>>>>> 6aba7f0 (a)
   --color-warn-600: #b45309;
 
   --color-danger-50: #fdf0f0;
   --color-danger-100: #fbdcdc;
+<<<<<<< HEAD
   --color-danger-500: #dc3a3a;
   --color-danger-600: #c62828;
   --color-danger-700: #a31f1f;
+=======
+  --color-danger-200: #f6b8b8;
+  --color-danger-300: #ef8f8f;
+  --color-danger-500: #dc3a3a;
+  --color-danger-600: #c62828;
+  --color-danger-700: #a31f1f;
+
+  /* Cantos discretos e sombras subtis: aspeto de aplicação de secretária, não de site */
+  --radius-sm: 0.25rem;
+  --radius: 0.375rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.625rem;
+  --radius-2xl: 0.75rem;
+  --shadow-sm: 0 1px 2px rgb(16 24 40 / 0.05);
+  --shadow: 0 1px 2px rgb(16 24 40 / 0.06), 0 1px 3px rgb(16 24 40 / 0.06);
+  --shadow-md: 0 2px 6px -1px rgb(16 24 40 / 0.08), 0 1px 3px rgb(16 24 40 / 0.05);
+  --shadow-lg: 0 8px 16px -4px rgb(16 24 40 / 0.1), 0 2px 6px -2px rgb(16 24 40 / 0.05);
+  --shadow-xl: 0 16px 28px -8px rgb(16 24 40 / 0.14), 0 4px 8px -4px rgb(16 24 40 / 0.06);
+  --shadow-2xl: 0 24px 48px -12px rgb(16 24 40 / 0.25);
+>>>>>>> 6aba7f0 (a)
 }
 
 html {

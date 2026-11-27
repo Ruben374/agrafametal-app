@@ -1,0 +1,253 @@
+/* Fonte dos ícones (Lucide): só woff2, o único formato que o Electron precisa */
+@font-face {
+  font-family: 'lucide';
+  src: url('lucide-static/font/lucide.woff2') format('woff2');
+  font-display: block;
+}
+
+/* ===================== ÍCONES =====================
+   Os ícones continuam a ser escritos como no Font Awesome (<i className="fa-solid fa-trash">),
+   mas aqui são desenhados com os ícones Lucide (traço fino, estilo atual).
+   Assim não foi preciso mexer no App.jsx. Para trocar um ícone, muda-se só a linha dele.
+   O fa-square (quadrados da legenda dos meses) continua a ser o do Font Awesome (cheio). */
+
+.fa-folder,
+.fa-lock,
+.fa-folder-open,
+.fa-building,
+.fa-triangle-exclamation,
+.fa-trash,
+.fa-pen,
+.fa-circle-info,
+.fa-circle-exclamation,
+.fa-chevron-right,
+.fa-plus,
+.fa-file-excel,
+.fa-print,
+.fa-paperclip,
+.fa-magnifying-glass,
+.fa-key,
+.fa-gear,
+.fa-floppy-disk,
+.fa-file-pdf,
+.fa-ellipsis-vertical,
+.fa-check,
+.fa-calendar,
+.fa-calculator,
+.fa-xmark,
+.fa-user-gear,
+.fa-underline,
+.fa-spinner,
+.fa-sort-up,
+.fa-sort-down,
+.fa-sort,
+.fa-outdent,
+.fa-lock-open,
+.fa-list-ul,
+.fa-list-ol,
+.fa-italic,
+.fa-indent,
+.fa-hard-drive,
+.fa-folder-plus,
+.fa-folder-minus,
+.fa-file-word,
+.fa-file-signature,
+.fa-file-lines,
+.fa-file-image,
+.fa-file-circle-xmark,
+.fa-file-circle-plus,
+.fa-file,
+.fa-desktop,
+.fa-clock-rotate-left,
+.fa-circle-question,
+.fa-circle-check,
+.fa-chevron-left,
+.fa-chevron-down,
+.fa-calendar-days,
+.fa-bold,
+.fa-arrow-left,
+.fa-align-right,
+.fa-align-left,
+.fa-align-center {
+  font-family: 'lucide' !important;
+  font-weight: normal !important;
+  font-style: normal;
+  font-size: 1.12em;
+  line-height: 1;
+  vertical-align: -0.14em;
+}
+
+.fa-folder::before {
+  content: '\e0d7' !important;
+} /* folder */
+.fa-lock::before {
+  content: '\e10b' !important;
+} /* lock */
+.fa-folder-open::before {
+  content: '\e247' !important;
+} /* folder-open */
+.fa-building::before {
+  content: '\e290' !important;
+} /* building-2 */
+.fa-triangle-exclamation::before {
+  content: '\e193' !important;
+} /* triangle-alert */
+.fa-trash::before {
+  content: '\e18e' !important;
+} /* trash-2 */
+.fa-pen::before {
+  content: '\e1f9' !important;
+} /* pencil */
+.fa-circle-info::before {
+  content: '\e0f9' !important;
+} /* info */
+.fa-circle-exclamation::before {
+  content: '\e077' !important;
+} /* circle-alert */
+.fa-chevron-right::before {
+  content: '\e06f' !important;
+} /* chevron-right */
+.fa-plus::before {
+  content: '\e13d' !important;
+} /* plus */
+.fa-file-excel::before {
+  content: '\e326' !important;
+} /* file-spreadsheet */
+.fa-print::before {
+  content: '\e141' !important;
+} /* printer */
+.fa-paperclip::before {
+  content: '\e12d' !important;
+} /* paperclip */
+.fa-magnifying-glass::before {
+  content: '\e151' !important;
+} /* search */
+.fa-key::before {
+  content: '\e4a3' !important;
+} /* key-round */
+.fa-gear::before {
+  content: '\e154' !important;
+} /* settings */
+.fa-floppy-disk::before {
+  content: '\e14d' !important;
+} /* save */
+.fa-file-pdf::before {
+  content: '\e0cc' !important;
+} /* file-text */
+.fa-ellipsis-vertical::before {
+  content: '\e0b7' !important;
+} /* ellipsis-vertical */
+.fa-check::before {
+  content: '\e06c' !important;
+} /* check */
+.fa-calendar::before {
+  content: '\e063' !important;
+} /* calendar */
+.fa-calculator::before {
+  content: '\e1bc' !important;
+} /* calculator */
+.fa-xmark::before {
+  content: '\e1b2' !important;
+} /* x */
+.fa-user-gear::before {
+  content: '\e342' !important;
+} /* user-cog */
+.fa-underline::before {
+  content: '\e19a' !important;
+} /* underline */
+.fa-spinner::before {
+  content: '\e10a' !important;
+} /* loader-circle */
+.fa-sort-up::before {
+  content: '\e070' !important;
+} /* chevron-up */
+.fa-sort-down::before {
+  content: '\e06d' !important;
+} /* chevron-down */
+.fa-sort::before {
+  content: '\e211' !important;
+} /* chevrons-up-down */
+.fa-outdent::before {
+  content: '\e107' !important;
+} /* indent-decrease */
+.fa-lock-open::before {
+  content: '\e10c' !important;
+} /* lock-open */
+.fa-list-ul::before {
+  content: '\e106' !important;
+} /* list */
+.fa-list-ol::before {
+  content: '\e1d1' !important;
+} /* list-ordered */
+.fa-italic::before {
+  content: '\e0fb' !important;
+} /* italic */
+.fa-indent::before {
+  content: '\e108' !important;
+} /* indent-increase */
+.fa-hard-drive::before {
+  content: '\e0ed' !important;
+} /* hard-drive */
+.fa-folder-plus::before {
+  content: '\e0d9' !important;
+} /* folder-plus */
+.fa-folder-minus::before {
+  content: '\e0d8' !important;
+} /* folder-minus */
+.fa-file-word::before {
+  content: '\e0cc' !important;
+} /* file-text */
+.fa-file-signature::before {
+  content: '\e320' !important;
+} /* file-pen-line */
+.fa-file-lines::before {
+  content: '\e0cc' !important;
+} /* file-text */
+.fa-file-image::before {
+  content: '\e31c' !important;
+} /* file-image */
+.fa-file-circle-xmark::before {
+  content: '\e0cd' !important;
+} /* file-x */
+.fa-file-circle-plus::before {
+  content: '\e0c9' !important;
+} /* file-plus */
+.fa-file::before {
+  content: '\e0c0' !important;
+} /* file */
+.fa-desktop::before {
+  content: '\e11d' !important;
+} /* monitor */
+.fa-clock-rotate-left::before {
+  content: '\e1f5' !important;
+} /* history */
+.fa-circle-question::before {
+  content: '\e082' !important;
+} /* circle-help */
+.fa-circle-check::before {
+  content: '\e226' !important;
+} /* circle-check */
+.fa-chevron-left::before {
+  content: '\e06e' !important;
+} /* chevron-left */
+.fa-chevron-down::before {
+  content: '\e06d' !important;
+} /* chevron-down */
+.fa-calendar-days::before {
+  content: '\e2b9' !important;
+} /* calendar-days */
+.fa-bold::before {
+  content: '\e05d' !important;
+} /* bold */
+.fa-arrow-left::before {
+  content: '\e048' !important;
+} /* arrow-left */
+.fa-align-right::before {
+  content: '\e183' !important;
+} /* align-right */
+.fa-align-left::before {
+  content: '\e185' !important;
+} /* align-left */
+.fa-align-center::before {
+  content: '\e182' !important;
+} /* align-center */

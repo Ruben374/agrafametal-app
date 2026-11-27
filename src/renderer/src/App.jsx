@@ -133,7 +133,11 @@ function ConfirmModal({ pedido, onResponder }) {
             className={`shrink-0 w-11 h-11 rounded-full flex items-center justify-center ${pedido.perigo ? 'bg-danger-50 text-danger-600' : 'bg-brand-50 text-brand-700'}`}
           >
             <i
+<<<<<<< HEAD
               className={`fa-solid ${pedido.perigo ? 'fa-triangle-exclamation' : 'fa-circle-question'} text-lg`}
+=======
+              className={`fa-solid ${pedido.perigo ? 'fa-triangle-exclamation' : pedido.soOk ? 'fa-circle-info' : 'fa-circle-question'} text-lg`}
+>>>>>>> 6aba7f0 (a)
             ></i>
           </div>
           <div className="min-w-0">
@@ -146,9 +150,17 @@ function ConfirmModal({ pedido, onResponder }) {
           </div>
         </div>
         <div className="flex justify-end gap-2 mt-6">
+<<<<<<< HEAD
           <button onClick={() => onResponder(false)} className={BTN_SECUNDARIO}>
             Cancelar
           </button>
+=======
+          {!pedido.soOk && (
+            <button onClick={() => onResponder(false)} className={BTN_SECUNDARIO}>
+              Cancelar
+            </button>
+          )}
+>>>>>>> 6aba7f0 (a)
           <button
             ref={btnRef}
             onClick={() => onResponder(true)}
@@ -505,6 +517,621 @@ function FolhaImpressao({ rel, subtitulo }) {
   )
 }
 
+<<<<<<< HEAD
+=======
+/* ===== TIPOS DE MANUTENÇÃO (etiqueta colorida) ===== */
+const TIPOS_MANUTENCAO = ['Preventiva', 'Corretiva', 'Inspeção', 'Instalação', 'Outro']
+const COR_TIPO = {
+  Preventiva: 'bg-brand-50 text-brand-700 border-brand-200',
+  Corretiva: 'bg-accent-50 text-accent-700 border-accent-200',
+  Inspeção: 'bg-ok-50 text-ok-700 border-ok-200',
+  Instalação: 'bg-slate-100 text-slate-700 border-slate-300'
+}
+function BadgeTipo({ tipo }) {
+  if (!tipo) return null
+  return (
+    <span
+      className={`inline-block shrink-0 rounded-full border px-2 py-0.5 text-xs font-semibold whitespace-nowrap ${COR_TIPO[tipo] || 'bg-slate-100 text-slate-600 border-slate-300'}`}
+    >
+      {tipo}
+    </span>
+  )
+}
+
+// Botão redondo «+» ao lado do título da página
+function BotaoMais({ titulo, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      title={titulo}
+      aria-label={titulo}
+      className="shrink-0 w-10 h-10 rounded-full bg-brand-700 hover:bg-brand-800 text-white shadow-md flex items-center justify-center transition"
+    >
+      <i className="fa-solid fa-plus text-lg"></i>
+    </button>
+  )
+}
+
+const formatarTamanho = (bytes) => {
+  if (bytes == null) return ''
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1).replace('.', ',')} MB`
+}
+const formatarDataHora = (ms) =>
+  new Date(ms).toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'short' })
+
+const iconeFicheiro = (nome, pasta) => {
+  if (pasta) return 'fa-folder text-accent-500'
+  const ext = nome.split('.').pop().toLowerCase()
+  if (['xlsx', 'xls', 'csv', 'ods'].includes(ext)) return 'fa-file-excel text-ok-600'
+  if (ext === 'pdf') return 'fa-file-pdf text-danger-600'
+  if (['doc', 'docx', 'odt', 'txt'].includes(ext)) return 'fa-file-word text-brand-600'
+  if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'heic'].includes(ext))
+    return 'fa-file-image text-accent-600'
+  return 'fa-file text-slate-400'
+}
+
+/* ===== VISTA DA EMPRESA: os 12 meses do ano =====
+   Todos os meses aparecem sempre. Mês passado sem registos (de qualquer máquina
+   da empresa) fica a vermelho; mês atual sem registos fica "em curso"; meses futuros
+   e meses antes de a empresa existir na aplicação ficam neutros. */
+function VistaEmpresa({ empresa, versao, onAbrirRegisto, onErro }) {
+  const hoje = hojeLocal()
+  const anoAtual = Number(hoje.slice(0, 4))
+  const mesAtual = Number(hoje.slice(5, 7))
+  const [ano, setAno] = useState(anoAtual)
+  const [resumo, setResumo] = useState(null)
+  const [mesSel, setMesSel] = useState(mesAtual)
+  const [registos, setRegistos] = useState([])
+  const [ordem, setOrdem] = useState({ coluna: 'data', asc: false })
+
+  // Mudar de empresa: volta ao ano e mês atuais
+  const [empresaAnterior, setEmpresaAnterior] = useState(empresa.id)
+  if (empresaAnterior !== empresa.id) {
+    setEmpresaAnterior(empresa.id)
+    setAno(anoAtual)
+    setMesSel(mesAtual)
+  }
+
+  useEffect(() => {
+    let ativo = true
+    window.api
+      .getResumoMensal(empresa.id, ano)
+      .then((r) => ativo && setResumo(r))
+      .catch((e) => onErro(limparErro(e)))
+    return () => {
+      ativo = false
+    }
+  }, [empresa.id, ano, versao]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    let ativo = true
+    window.api
+      .getRegistosMes(empresa.id, ano, mesSel)
+      .then((r) => ativo && setRegistos(r))
+      .catch((e) => onErro(limparErro(e)))
+    return () => {
+      ativo = false
+    }
+  }, [empresa.id, ano, mesSel, versao]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const mudarAno = (delta) => {
+    const novo = ano + delta
+    setAno(novo)
+    setMesSel(novo === anoAtual ? mesAtual : 12)
+  }
+
+  const estadoMes = (mes) => {
+    const total = resumo?.meses[mes - 1] ?? 0
+    if (total > 0) return 'feito'
+    const chave = `${ano}-${String(mes).padStart(2, '0')}`
+    if (ano > anoAtual || (ano === anoAtual && mes > mesAtual)) return 'futuro'
+    if (resumo && chave < resumo.criadaEm.slice(0, 7)) return 'antes'
+    if (ano === anoAtual && mes === mesAtual) return 'curso'
+    return 'falta'
+  }
+
+  const ESTILO_MES = {
+    feito: 'bg-ok-50 border-ok-200 text-ok-700 hover:border-ok-400',
+    falta: 'bg-danger-50 border-danger-300 border-dashed text-danger-700 hover:border-danger-500',
+    curso: 'bg-warn-50 border-warn-300 text-warn-600 hover:border-accent-400',
+    futuro: 'bg-slate-50 border-slate-200 text-slate-400 hover:border-slate-300',
+    antes: 'bg-slate-50 border-slate-200 text-slate-400 hover:border-slate-300'
+  }
+  const ICONE_MES = {
+    feito: 'fa-folder-open',
+    falta: 'fa-folder-minus',
+    curso: 'fa-folder',
+    futuro: 'fa-folder',
+    antes: 'fa-folder'
+  }
+  const textoMes = (estado, total) =>
+    estado === 'feito'
+      ? `${total} ${total === 1 ? 'registo' : 'registos'}`
+      : estado === 'falta'
+        ? 'Sem registos'
+        : estado === 'curso'
+          ? 'Em curso'
+          : '—'
+
+  const colunas = [
+    ['id', 'Nº'],
+    ['data', 'Data'],
+    ['maquina_nome', 'Máquina'],
+    ['tipo_manutencao', 'Tipo'],
+    ['tecnico', 'Técnico'],
+    ['titulo', 'Título']
+  ]
+  const ordenados = useMemo(() => {
+    const lista = [...registos]
+    const { coluna, asc } = ordem
+    lista.sort((a, b) => {
+      const va = a[coluna] ?? ''
+      const vb = b[coluna] ?? ''
+      const r =
+        typeof va === 'number' && typeof vb === 'number'
+          ? va - vb
+          : collator.compare(String(va), String(vb))
+      return asc ? r : -r
+    })
+    return lista
+  }, [registos, ordem])
+
+  const ordenarPor = (coluna) =>
+    setOrdem((o) => ({ coluna, asc: o.coluna === coluna ? !o.asc : coluna !== 'data' }))
+
+  const emFalta = resumo
+    ? Array.from({ length: 12 }, (_, i) => i + 1).filter((m) => estadoMes(m) === 'falta').length
+    : 0
+
+  return (
+    <div className="max-w-5xl mx-auto">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 lg:p-6 mb-6">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+          <h3 className="text-xl font-bold text-slate-900 flex items-center gap-2">
+            <i className="fa-solid fa-calendar-days text-accent-500"></i>Manutenções por mês
+          </h3>
+          <div className="flex items-center gap-1" role="group" aria-label="Ano">
+            <button
+              onClick={() => mudarAno(-1)}
+              disabled={!resumo || ano <= resumo.anoMin}
+              title="Ano anterior"
+              aria-label="Ano anterior"
+              className="w-9 h-9 rounded-md text-slate-600 hover:bg-slate-100 disabled:opacity-30 disabled:hover:bg-transparent"
+            >
+              <i className="fa-solid fa-chevron-left"></i>
+            </button>
+            <span className="w-16 text-center text-lg font-bold tabular-nums text-slate-900">
+              {ano}
+            </span>
+            <button
+              onClick={() => mudarAno(1)}
+              disabled={ano >= anoAtual}
+              title="Ano seguinte"
+              aria-label="Ano seguinte"
+              className="w-9 h-9 rounded-md text-slate-600 hover:bg-slate-100 disabled:opacity-30 disabled:hover:bg-transparent"
+            >
+              <i className="fa-solid fa-chevron-right"></i>
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-3 sm:grid-cols-4 xl:grid-cols-6 gap-2.5">
+          {MESES.map((nome, i) => {
+            const mes = i + 1
+            const estado = estadoMes(mes)
+            const total = resumo?.meses[i] ?? 0
+            const selecionado = mes === mesSel
+            return (
+              <button
+                key={nome}
+                onClick={() => setMesSel(mes)}
+                aria-pressed={selecionado}
+                title={
+                  estado === 'falta' ? `${nome} ${ano}: sem registos de manutenção` : undefined
+                }
+                className={`text-left rounded-lg border-2 px-3 py-2.5 transition ${ESTILO_MES[estado]} ${selecionado ? 'ring-2 ring-brand-500 ring-offset-1' : ''}`}
+              >
+                <div className="flex items-center gap-2 font-semibold text-[15px]">
+                  <i className={`fa-solid ${ICONE_MES[estado]} text-sm`}></i>
+                  <span className="truncate">{nome}</span>
+                </div>
+                <div className="text-xs font-medium mt-0.5 tabular-nums">
+                  {textoMes(estado, total)}
+                </div>
+              </button>
+            )
+          })}
+        </div>
+
+        <div className="flex flex-wrap gap-x-5 gap-y-1 mt-4 text-xs text-slate-500">
+          <span>
+            <i className="fa-solid fa-square text-ok-200 mr-1.5"></i>Com registos
+          </span>
+          <span>
+            <i className="fa-solid fa-square text-danger-200 mr-1.5"></i>Mês sem registos
+          </span>
+          <span>
+            <i className="fa-solid fa-square text-warn-100 mr-1.5"></i>Mês atual (em curso)
+          </span>
+          <span>
+            <i className="fa-solid fa-square text-slate-200 mr-1.5"></i>Futuro / antes de a empresa
+            ser registada
+          </span>
+          {emFalta > 0 && (
+            <span className="ml-auto font-semibold text-danger-700">
+              <i className="fa-solid fa-triangle-exclamation mr-1.5"></i>
+              {emFalta} {emFalta === 1 ? 'mês' : 'meses'} sem registos em {ano}
+            </span>
+          )}
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 lg:p-6">
+        <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
+          <i className="fa-solid fa-folder-open text-accent-500"></i>
+          {MESES[mesSel - 1]} {ano}
+        </h3>
+        {ordenados.length === 0 ? (
+          <div className="p-8 text-center text-slate-500 bg-slate-50 rounded-lg border border-dashed border-slate-300">
+            <i className="fa-solid fa-file-circle-xmark text-3xl mb-3 text-slate-300"></i>
+            <p className="text-base">Nenhuma máquina desta empresa tem registos neste mês.</p>
+          </div>
+        ) : (
+          <>
+            <div className="overflow-x-auto border border-slate-200 rounded-lg">
+              <table className="w-full text-[14px]">
+                <thead className="bg-slate-50 text-slate-600">
+                  <tr>
+                    {colunas.map(([chave, titulo]) => (
+                      <th
+                        key={chave}
+                        className="text-left font-semibold px-3 py-2 whitespace-nowrap"
+                      >
+                        <button
+                          onClick={() => ordenarPor(chave)}
+                          className="inline-flex items-center gap-1.5 hover:text-slate-900"
+                        >
+                          {titulo}
+                          <i
+                            className={`fa-solid text-[10px] ${ordem.coluna === chave ? (ordem.asc ? 'fa-sort-up' : 'fa-sort-down') : 'fa-sort text-slate-300'}`}
+                          ></i>
+                        </button>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {ordenados.map((r) => (
+                    <tr
+                      key={r.id}
+                      onDoubleClick={() => onAbrirRegisto(r)}
+                      className="border-t border-slate-100 hover:bg-brand-50 cursor-default"
+                    >
+                      <td className="px-3 py-2 tabular-nums">
+                        <button
+                          onClick={() => onAbrirRegisto(r)}
+                          className="font-semibold text-brand-600 hover:text-brand-800 hover:underline"
+                        >
+                          {String(r.id).padStart(5, '0')}
+                        </button>
+                      </td>
+                      <td className="px-3 py-2 tabular-nums whitespace-nowrap">
+                        {formatarData(r.data)}
+                      </td>
+                      <td className="px-3 py-2 max-w-[12rem] truncate" title={r.maquina_nome}>
+                        {r.maquina_nome}
+                      </td>
+                      <td className="px-3 py-2">
+                        <BadgeTipo tipo={r.tipo_manutencao} />
+                      </td>
+                      <td className="px-3 py-2 max-w-[9rem] truncate">{r.tecnico || '—'}</td>
+                      <td className="px-3 py-2 max-w-[18rem] truncate" title={r.titulo}>
+                        {r.titulo}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="text-sm text-slate-500 mt-2 tabular-nums">
+              {ordenados.length} {ordenados.length === 1 ? 'registo' : 'registos'}
+            </p>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
+/* ===== DOCUMENTOS DO REGISTO (pasta no disco + folha de custos) ===== */
+function SecaoDocumentos({ registoId, versao, pedirSenha, mostrarToast }) {
+  const [info, setInfo] = useState(null)
+  const [aTrabalhar, setATrabalhar] = useState(false)
+
+  const carregar = async () => {
+    if (!registoId) return
+    try {
+      setInfo(await window.api.listarDocumentos(registoId))
+    } catch (e) {
+      mostrarToast(limparErro(e), 'erro')
+    }
+  }
+
+  useEffect(() => {
+    if (!registoId) return
+    let ativo = true
+    window.api
+      .listarDocumentos(registoId)
+      .then((r) => ativo && setInfo(r))
+      .catch((e) => mostrarToast(limparErro(e), 'erro'))
+    return () => {
+      ativo = false
+    }
+  }, [registoId, versao]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Ao voltar à janela (ex.: depois de gravar no Excel) atualiza a lista
+  useEffect(() => {
+    const aoFocar = () => carregar()
+    window.addEventListener('focus', aoFocar)
+    return () => window.removeEventListener('focus', aoFocar)
+  }, [registoId]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const executar = async (fn) => {
+    if (aTrabalhar) return
+    setATrabalhar(true)
+    try {
+      await fn()
+    } catch (e) {
+      mostrarToast(limparErro(e), 'erro')
+    } finally {
+      setATrabalhar(false)
+      carregar()
+    }
+  }
+
+  const folha = () =>
+    executar(async () => {
+      const r = await window.api.folhaCustos(registoId)
+      if (r.aviso) mostrarToast(r.aviso, 'aviso')
+      else if (r.criada)
+        mostrarToast(
+          r.usouModelo
+            ? 'Folha de custos criada a partir do modelo (modelo_custos.xlsx)'
+            : 'Folha de custos criada',
+          'sucesso'
+        )
+    })
+  const adicionar = () =>
+    executar(async () => {
+      const r = await window.api.adicionarDocumentos(registoId)
+      if (r.adicionados)
+        mostrarToast(
+          r.adicionados === 1 ? 'Documento adicionado' : `${r.adicionados} documentos adicionados`,
+          'sucesso'
+        )
+    })
+  const abrirPasta = () => executar(() => window.api.abrirPastaRegisto(registoId))
+  const abrir = (nome) => executar(() => window.api.abrirDocumento(registoId, nome))
+  const remover = async (nome) => {
+    const ok = await pedirSenha({
+      titulo: 'Remover documento',
+      mensagem: `Remover «${nome}» deste registo?\nO ficheiro é movido para a pasta «registos\\_eliminados».`,
+      textoBotao: 'Remover',
+      perigo: true,
+      acao: (senha) => window.api.removerDocumento(registoId, nome, senha)
+    })
+    if (ok) {
+      mostrarToast('Documento removido', 'sucesso')
+      carregar()
+    }
+  }
+
+  const ficheiros = info?.ficheiros ?? []
+  const BTN = `${BTN_SECUNDARIO} border border-slate-300 bg-white py-2 text-sm disabled:opacity-50`
+
+  if (!registoId) {
+    return (
+      <p className="text-sm text-slate-500">
+        <i className="fa-solid fa-circle-info mr-1.5 text-brand-500"></i>
+        Grave o registo («Aplicar» ou «Gravar») para poder anexar documentos e criar a folha de
+        custos.
+      </p>
+    )
+  }
+
+  return (
+    <div>
+      <div className="flex flex-wrap gap-2 mb-3">
+        <button
+          onClick={folha}
+          disabled={aTrabalhar}
+          className={`${BTN_PRIMARIO} py-2 text-sm disabled:opacity-50`}
+        >
+          <i className="fa-solid fa-file-excel"></i>
+          {info?.folhaCustos ? 'Abrir folha de custos' : 'Criar folha de custos'}
+        </button>
+        <button onClick={adicionar} disabled={aTrabalhar} className={BTN}>
+          <i className="fa-solid fa-paperclip"></i>Adicionar ficheiros…
+        </button>
+        <button onClick={abrirPasta} disabled={aTrabalhar} className={BTN}>
+          <i className="fa-solid fa-folder-open"></i>Abrir pasta
+        </button>
+      </div>
+      {ficheiros.length === 0 ? (
+        <p className="text-sm text-slate-500 bg-slate-50 border border-dashed border-slate-300 rounded-md px-3 py-3">
+          Ainda não há documentos neste registo.
+        </p>
+      ) : (
+        <ul className="border border-slate-200 rounded-md divide-y divide-slate-100">
+          {ficheiros.map((f) => (
+            <li
+              key={f.nome}
+              className="flex items-center gap-3 px-3 py-1.5 text-sm hover:bg-slate-50 group/doc"
+              onDoubleClick={() => abrir(f.nome)}
+            >
+              <i className={`fa-solid ${iconeFicheiro(f.nome, f.pasta)} w-4 text-center`}></i>
+              <button
+                onClick={() => abrir(f.nome)}
+                className="flex-1 min-w-0 truncate text-left text-slate-800 hover:text-brand-700 hover:underline"
+                title={f.nome}
+              >
+                {f.nome}
+              </button>
+              <span className="text-slate-400 tabular-nums w-16 text-right shrink-0">
+                {formatarTamanho(f.tamanho)}
+              </span>
+              <span className="text-slate-400 tabular-nums w-32 text-right shrink-0 hidden md:block">
+                {formatarDataHora(f.modificado)}
+              </span>
+              <button
+                onClick={() => remover(f.nome)}
+                title="Remover (pede a senha)"
+                aria-label={`Remover ${f.nome}`}
+                className="opacity-40 group-hover/doc:opacity-100 focus:opacity-100 w-8 h-8 rounded text-slate-500 hover:text-danger-600 hover:bg-danger-50 shrink-0"
+              >
+                <i className="fa-solid fa-trash text-xs"></i>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
+/* ===== CONFIGURAÇÃO DE CUSTOS (valores por defeito das folhas novas) ===== */
+const CAMPOS_CUSTOS = [
+  ['custo_preco_hora', 'Preço por hora (mão de obra)', '€/h'],
+  ['custo_perc_extra', 'Acréscimo das horas extra', '%'],
+  ['custo_preco_hora_oficina', 'Preço por hora (oficina)', '€/h'],
+  ['custo_preco_hora_viagem', 'Preço por hora de viagem', '€/h'],
+  ['custo_preco_km', 'Preço por quilómetro', '€/km'],
+  ['custo_perc_urgencia', 'Taxa de urgência', '%'],
+  ['custo_iva', 'IVA', '%']
+]
+function ModalConfigCustos({ onFechar, onSucesso }) {
+  const [valores, setValores] = useState(null)
+  const [temModelo, setTemModelo] = useState(false)
+  const [senha, setSenha] = useState('')
+  const [erro, setErro] = useState('')
+  const [aGravar, setAGravar] = useState(false)
+
+  useEffect(() => {
+    window.api
+      .getConfigCustos()
+      .then(({ temModelo, ...v }) => {
+        setTemModelo(temModelo)
+        setValores(
+          Object.fromEntries(Object.entries(v).map(([k, n]) => [k, String(n).replace('.', ',')]))
+        )
+      })
+      .catch((e) => setErro(limparErro(e)))
+  }, [])
+
+  const gravar = async () => {
+    if (aGravar) return
+    if (!senha) return setErro('Introduza a senha.')
+    setAGravar(true)
+    try {
+      await window.api.setConfigCustos(valores, senha)
+      onSucesso()
+    } catch (e) {
+      setErro(limparErro(e))
+      setSenha('')
+      setAGravar(false)
+    }
+  }
+
+  return (
+    <div
+      className="fixed inset-0 modal-backdrop z-[60] flex items-center justify-center p-4"
+      onKeyDown={(e) => e.key === 'Escape' && onFechar()}
+      onMouseDown={(e) => e.target === e.currentTarget && onFechar()}
+    >
+      <form
+        className="bg-white rounded-xl shadow-2xl w-full max-w-lg p-6 animar-entrada max-h-[calc(100vh-2rem)] overflow-y-auto"
+        role="dialog"
+        aria-modal="true"
+        onSubmit={(e) => {
+          e.preventDefault()
+          gravar()
+        }}
+      >
+        <h3 className="font-bold text-xl text-slate-900 flex items-center gap-2">
+          <i className="fa-solid fa-calculator text-brand-600"></i>Configuração de custos
+        </h3>
+        <p className="text-sm text-slate-500 mt-1">
+          Valores que aparecem já preenchidos nas folhas de custos novas. As folhas já criadas não
+          mudam.
+        </p>
+        {temModelo && (
+          <p className="text-sm text-brand-800 bg-brand-50 border border-brand-100 rounded-md p-3 mt-3">
+            <i className="fa-solid fa-file-excel mr-1.5"></i>
+            Está a ser usado o modelo próprio <b>modelo_custos.xlsx</b> (pasta de dados). Estes
+            valores só entram nas células do modelo que tenham o nome certo.
+          </p>
+        )}
+        {!valores ? (
+          <p className="text-slate-500 mt-5">A carregar…</p>
+        ) : (
+          <div className="mt-4 space-y-3">
+            {CAMPOS_CUSTOS.map(([chave, rotulo, unidade]) => (
+              <label key={chave} className="flex items-center gap-3">
+                <span className="flex-1 min-w-0 text-[15px] text-slate-700">{rotulo}</span>
+                <input
+                  value={valores[chave]}
+                  inputMode="decimal"
+                  onChange={(e) => {
+                    setValores((v) => ({ ...v, [chave]: e.target.value }))
+                    setErro('')
+                  }}
+                  className={`${INPUT.replace('w-full ', '')} w-28 shrink-0 text-right tabular-nums py-2`}
+                />
+                <span className="w-10 shrink-0 text-sm text-slate-500">{unidade}</span>
+              </label>
+            ))}
+          </div>
+        )}
+        <label className="block text-sm font-semibold text-slate-600 mt-5 mb-1.5">
+          <i className="fa-solid fa-lock mr-1.5 text-slate-400"></i>Senha
+        </label>
+        <input
+          type="password"
+          value={senha}
+          autoComplete="off"
+          aria-label="Senha"
+          onChange={(e) => {
+            setSenha(e.target.value)
+            setErro('')
+          }}
+          className={INPUT}
+        />
+        {erro && (
+          <p role="alert" className="text-danger-600 text-sm font-semibold mt-2">
+            <i className="fa-solid fa-circle-exclamation mr-1.5"></i>
+            {erro}
+          </p>
+        )}
+        <div className="flex justify-end gap-2 mt-6">
+          <button type="button" onClick={onFechar} className={BTN_SECUNDARIO}>
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            disabled={!valores || aGravar}
+            className={`${BTN_PRIMARIO} disabled:opacity-60`}
+          >
+            Guardar
+          </button>
+        </div>
+      </form>
+    </div>
+  )
+}
+
+>>>>>>> 6aba7f0 (a)
 export default function App() {
   // 1. ESTADO DA APLICAÇÃO (Ligado ao SQLite)
   const [empresas, setEmpresas] = useState([])
@@ -543,10 +1170,25 @@ export default function App() {
   // Senha / edição protegida
   const [chapaDesbloqueada, setChapaDesbloqueada] = useState(null) // id da máquina desbloqueada
   const [isAlterarSenhaOpen, setAlterarSenhaOpen] = useState(false)
+<<<<<<< HEAD
+=======
+  const [isConfigCustosOpen, setConfigCustosOpen] = useState(false)
+
+  // Onde estão os dados (sempre visível no rodapé da barra lateral)
+  const [infoDados, setInfoDados] = useState(null)
+  const [ocupado, setOcupado] = useState(null) // texto do aviso «a trabalhar…»
+  const [versaoRegistos, setVersaoRegistos] = useState(0) // atualiza a vista da empresa
+  const voltarEmpresaRef = useRef(false) // registo aberto a partir da vista da empresa
+>>>>>>> 6aba7f0 (a)
 
   // Folha A4: modo, data escolhida pelo utilizador e impressão a partir da lista
   const [modoFolha, setModoFolha] = useState('novo') // 'novo' | 'leitura' | 'edicao'
   const [dataRegisto, setDataRegisto] = useState('')
+<<<<<<< HEAD
+=======
+  const [tecnicoRegisto, setTecnicoRegisto] = useState('')
+  const [tipoRegisto, setTipoRegisto] = useState('Preventiva')
+>>>>>>> 6aba7f0 (a)
   const [relImprimir, setRelImprimir] = useState(null)
   const dataRef = useRef(null)
   const subtituloRef = useRef(null)
@@ -587,7 +1229,11 @@ export default function App() {
     setToast({ mensagem, tipo })
     // Cancela o temporizador anterior para não fechar o toast novo antes do tempo
     clearTimeout(toastTimerRef.current)
+<<<<<<< HEAD
     toastTimerRef.current = setTimeout(() => setToast(null), tipo === 'erro' ? 6000 : 3500)
+=======
+    toastTimerRef.current = setTimeout(() => setToast(null), tipo === 'sucesso' ? 3500 : 7000)
+>>>>>>> 6aba7f0 (a)
   }
 
   // Confirmações (substituem o window.confirm)
@@ -681,6 +1327,25 @@ export default function App() {
       } finally {
         estadoProntoRef.current = true
       }
+<<<<<<< HEAD
+=======
+      try {
+        const info = await window.api.getAppInfo()
+        if (!ativo) return
+        setInfoDados(info)
+        if (info.bdNova) {
+          setPedidoConfirmacao({
+            titulo: 'Base de dados nova',
+            mensagem: `Foi criada uma base de dados nova (sem dados) em:\n${info.pastaDados}\n\nSe esperava ver os seus dados, feche a aplicação e confirme que está a abrir o programa certo, com a pasta «dados» ao lado.`,
+            textoBotao: 'OK',
+            soOk: true,
+            resolve: () => {}
+          })
+        }
+      } catch {
+        // não é crítico
+      }
+>>>>>>> 6aba7f0 (a)
     })()
     return () => {
       ativo = false
@@ -785,11 +1450,13 @@ export default function App() {
     aGravarRef.current = true
     try {
       setErroEmpresa('')
-      await window.api.addEmpresa(novaEmpresaNome)
+      const nova = await window.api.addEmpresa(novaEmpresaNome)
       setNovaEmpresaNome('')
       setEmpresaModalOpen(false)
       await carregarDados()
-      mostrarToast('Empresa adicionada', 'sucesso')
+      selecionarEmpresa(nova.id)
+      if (nova.aviso) mostrarToast(nova.aviso, 'aviso')
+      else mostrarToast('Empresa adicionada', 'sucesso')
     } catch (error) {
       setErroEmpresa('Erro do sistema: ' + error.message)
     } finally {
@@ -870,10 +1537,18 @@ export default function App() {
     if (aGravarRef.current) return
     aGravarRef.current = true
     try {
+<<<<<<< HEAD
       await window.api.updateEmpresa(empresaRenomear.id, nome, senhaRenomear)
       fecharRenomearEmpresa()
       await carregarDados()
       mostrarToast('Empresa renomeada', 'sucesso')
+=======
+      const r = await window.api.updateEmpresa(empresaRenomear.id, nome, senhaRenomear)
+      fecharRenomearEmpresa()
+      await carregarDados()
+      if (r?.aviso) mostrarToast(r.aviso, 'aviso')
+      else mostrarToast('Empresa renomeada', 'sucesso')
+>>>>>>> 6aba7f0 (a)
     } catch (error) {
       setErroRenomear(limparErro(error))
       setSenhaRenomear('')
@@ -957,12 +1632,26 @@ export default function App() {
   const handleBackup = async () => {
     setMenuOpen(false)
     try {
+<<<<<<< HEAD
       const r = await window.api.fazerBackup()
+=======
+      const pedido = window.api.fazerBackup()
+      // o aviso só aparece depois de escolher o ficheiro (enquanto o zip é criado)
+      const t = setTimeout(() => setOcupado('A criar a cópia de segurança…'), 400)
+      const r = await pedido.finally(() => {
+        clearTimeout(t)
+        setOcupado(null)
+      })
+>>>>>>> 6aba7f0 (a)
       if (r.sucesso) {
         const nome = r.caminho.split(/[\\/]/).pop()
         mostrarToast(`Cópia de segurança guardada: ${nome}`, 'sucesso')
       }
     } catch (error) {
+<<<<<<< HEAD
+=======
+      setOcupado(null)
+>>>>>>> 6aba7f0 (a)
       mostrarToast('Erro ao fazer a cópia: ' + limparErro(error), 'erro')
     }
   }
@@ -977,6 +1666,7 @@ export default function App() {
       return
     }
     if (escolha.cancelado) return
+<<<<<<< HEAD
     const ok = await pedirSenha({
       titulo: 'Restaurar cópia de segurança',
       mensagem:
@@ -986,6 +1676,30 @@ export default function App() {
       textoBotao: 'Restaurar',
       perigo: true,
       acao: (senha) => window.api.restaurarBackup(escolha.caminho, senha)
+=======
+    const conteudo =
+      `Contém ${escolha.empresas} empresa(s), ${escolha.maquinas} máquina(s) e ${escolha.relatorios} registo(s)` +
+      (escolha.tipo === 'zip' ? ` e ${escolha.ficheiros} documento(s).` : '.')
+    const aviso =
+      escolha.tipo === 'zip'
+        ? 'Os dados atuais e as pastas dos registos serão substituídos por esta cópia.'
+        : 'Os dados atuais serão substituídos por esta cópia (cópia antiga, sem documentos: as pastas dos registos ficam como estão).'
+    const ok = await pedirSenha({
+      titulo: 'Restaurar cópia de segurança',
+      mensagem:
+        `Restaurar a cópia «${escolha.nome}»?\n${conteudo}\n\n${aviso} ` +
+        'Antes disso, é guardada automaticamente uma cópia dos dados atuais na pasta das cópias de segurança.',
+      textoBotao: 'Restaurar',
+      perigo: true,
+      acao: async (senha) => {
+        setOcupado('A restaurar a cópia de segurança…')
+        try {
+          await window.api.restaurarBackup(escolha.caminho, senha)
+        } finally {
+          setOcupado(null)
+        }
+      }
+>>>>>>> 6aba7f0 (a)
     })
     if (!ok) return
     setChapaDesbloqueada(null)
@@ -994,6 +1708,10 @@ export default function App() {
     setRelatorios([])
     setPesquisa('')
     setOpenFolders({})
+<<<<<<< HEAD
+=======
+    setVersaoRegistos((v) => v + 1)
+>>>>>>> 6aba7f0 (a)
     await carregarDados()
     mostrarToast('Cópia de segurança restaurada', 'sucesso')
   }
@@ -1022,6 +1740,11 @@ export default function App() {
     })
     setTituloTexto(`MANUTENÇÃO ${activeMachine.nome.toUpperCase()}`)
     setDataRegisto('')
+<<<<<<< HEAD
+=======
+    setTecnicoRegisto('')
+    setTipoRegisto('Preventiva')
+>>>>>>> 6aba7f0 (a)
     setModoFolha('novo')
     setA4ModalOpen(true)
   }
@@ -1030,10 +1753,41 @@ export default function App() {
     setRelatorioAtual(rel)
     setTituloTexto(rel.titulo || '')
     setDataRegisto(rel.data || '')
+<<<<<<< HEAD
+=======
+    setTecnicoRegisto(rel.tecnico || '')
+    setTipoRegisto(rel.tipo_manutencao || 'Preventiva')
+>>>>>>> 6aba7f0 (a)
     setModoFolha('leitura')
     setA4ModalOpen(true)
   }
 
+<<<<<<< HEAD
+=======
+  // Abrir um registo a partir da tabela da vista da empresa
+  const abrirRegistoDaEmpresa = async (linha) => {
+    try {
+      const rel = await window.api.getRelatorio(linha.id)
+      if (!rel) return mostrarToast('O registo já não existe.', 'erro')
+      voltarEmpresaRef.current = true
+      selecionarMaquina(activeCompanyId, linha.maquina_id)
+      handleAbrirRelatorio(rel)
+    } catch (error) {
+      mostrarToast(limparErro(error), 'erro')
+    }
+  }
+
+  // Fecha a folha; se veio da vista da empresa, volta para lá
+  const fecharFolha = () => {
+    setA4ModalOpen(false)
+    if (voltarEmpresaRef.current) {
+      voltarEmpresaRef.current = false
+      trancarChapa()
+      setActiveMachineId(null)
+    }
+  }
+
+>>>>>>> 6aba7f0 (a)
   const handleEditarRegisto = async () => {
     if (!relatorioAtual?.id) return
     const id = relatorioAtual.id
@@ -1098,7 +1852,13 @@ export default function App() {
     return (
       titulo !== (relatorioAtual.titulo || '') ||
       corpo !== corpoInicialRef.current ||
+<<<<<<< HEAD
       dataRegisto !== (relatorioAtual.data || '')
+=======
+      dataRegisto !== (relatorioAtual.data || '') ||
+      tecnicoRegisto !== (relatorioAtual.tecnico || '') ||
+      tipoRegisto !== (relatorioAtual.tipo_manutencao || 'Preventiva')
+>>>>>>> 6aba7f0 (a)
     )
   }
 
@@ -1111,7 +1871,11 @@ export default function App() {
       if (!sair) return
     }
     if (relatorioAtual?.id) window.api.bloquear('relatorio').catch(() => {})
+<<<<<<< HEAD
     setA4ModalOpen(false)
+=======
+    fecharFolha()
+>>>>>>> 6aba7f0 (a)
   }
 
   const exigirData = () => {
@@ -1121,7 +1885,12 @@ export default function App() {
     return false
   }
 
+<<<<<<< HEAD
   const handleSaveRelatorio = async () => {
+=======
+  // manterAberto = «Aplicar»: grava e continua no registo (para anexar documentos, etc.)
+  const handleSaveRelatorio = async (manterAberto = false) => {
+>>>>>>> 6aba7f0 (a)
     if (!activeMachine || !relatorioAtual || modoFolha === 'leitura') return
     if (!exigirData()) return
     if (dataRegisto > hojeLocal()) {
@@ -1131,12 +1900,36 @@ export default function App() {
 
     const titulo = tituloRef.current?.value.trim() || 'REGISTO SEM TÍTULO'
     const corpo = editorRef.current?.innerHTML || ''
+<<<<<<< HEAD
     const dadosGuardar = { ...relatorioAtual, data: dataRegisto, titulo, corpo }
+=======
+    const dadosGuardar = {
+      ...relatorioAtual,
+      data: dataRegisto,
+      titulo,
+      corpo,
+      tecnico: tecnicoRegisto.trim(),
+      tipo_manutencao: tipoRegisto,
+      manterAberto
+    }
+>>>>>>> 6aba7f0 (a)
 
     try {
-      await window.api.saveRelatorio(activeMachine.id, dadosGuardar)
-      mostrarToast('Registo guardado com sucesso!', 'sucesso')
-      setA4ModalOpen(false)
+      const r = await window.api.saveRelatorio(activeMachine.id, dadosGuardar)
+      if (r?.aviso) mostrarToast(r.aviso, 'aviso')
+      else
+        mostrarToast(manterAberto ? 'Registo guardado' : 'Registo guardado com sucesso!', 'sucesso')
+      delete dadosGuardar.manterAberto
+      if (manterAberto) {
+        // continua aberto, agora como registo existente desbloqueado
+        if (tituloRef.current) tituloRef.current.value = titulo
+        setRelatorioAtual({ ...dadosGuardar, id: r.id })
+        setTecnicoRegisto(dadosGuardar.tecnico)
+        setModoFolha('edicao')
+      } else {
+        fecharFolha()
+      }
+      setVersaoRegistos((v) => v + 1)
 
       // Atualiza a lista de relatórios no ecrã silenciosamente
       const novosRels = await window.api.getRelatorios(activeMachine.id)
@@ -1156,6 +1949,10 @@ export default function App() {
     })
     if (!ok) return
     mostrarToast('Registo eliminado', 'sucesso')
+<<<<<<< HEAD
+=======
+    setVersaoRegistos((v) => v + 1)
+>>>>>>> 6aba7f0 (a)
     carregarRelatorios(activeMachine.id)
   }
 
@@ -1206,9 +2003,14 @@ export default function App() {
 
     try {
       // Grava só o campo alterado (evita que duas edições seguidas se sobreponham)
-      await window.api.updateCampoMaquina(activeMachine.id, campo, valor)
+      const r = await window.api.updateCampoMaquina(activeMachine.id, campo, valor)
       await carregarDados()
+<<<<<<< HEAD
       mostrarToast('Alteração guardada', 'sucesso')
+=======
+      if (r?.aviso) mostrarToast(r.aviso, 'aviso')
+      else mostrarToast('Alteração guardada', 'sucesso')
+>>>>>>> 6aba7f0 (a)
     } catch (error) {
       mostrarToast('Erro ao guardar: ' + limparErro(error), 'erro')
     }
@@ -1216,6 +2018,18 @@ export default function App() {
 
   const toggleFolder = (id) => {
     setOpenFolders((prev) => ({ ...prev, [id]: !prev[id] }))
+  }
+
+  // Clique numa empresa: mostra a vista da empresa (meses); clicar outra vez fecha a pasta
+  const selecionarEmpresa = (companyId) => {
+    if (activeCompanyId === companyId && !activeMachineId) {
+      toggleFolder(companyId)
+      return
+    }
+    trancarChapa()
+    setActiveCompanyId(companyId)
+    setActiveMachineId(null)
+    setOpenFolders((prev) => ({ ...prev, [companyId]: true }))
   }
 
   const selecionarMaquina = (companyId, machineId) => {
@@ -1341,12 +2155,26 @@ export default function App() {
                 {/* Linha da Empresa */}
                 <div className="group flex items-center rounded-md hover:bg-slate-100 focus-within:bg-slate-100 transition">
                   <button
+<<<<<<< HEAD
                     onClick={() => toggleFolder(empresa.id)}
                     aria-expanded={aberta}
                     title={empresa.nome}
                     className="flex items-center flex-1 min-w-0 px-2 py-2 text-left text-[15px] font-semibold text-slate-800 rounded-md"
                   >
                     <i
+=======
+                    onClick={() => selecionarEmpresa(empresa.id)}
+                    aria-expanded={aberta}
+                    aria-current={temMaquinaAtiva && !activeMachineId ? 'page' : undefined}
+                    title={`${empresa.nome} — ver os meses`}
+                    className={`flex items-center flex-1 min-w-0 px-2 py-2 text-left text-[15px] font-semibold rounded-md ${temMaquinaAtiva && !activeMachineId ? 'text-brand-800 bg-brand-50' : 'text-slate-800'}`}
+                  >
+                    <i
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        toggleFolder(empresa.id)
+                      }}
+>>>>>>> 6aba7f0 (a)
                       className={`fa-solid fa-chevron-down tree-caret text-[11px] text-slate-400 w-4 shrink-0 ${!aberta ? 'collapsed' : ''}`}
                     ></i>
                     <i
@@ -1459,6 +2287,10 @@ export default function App() {
                 {[
                   ['fa-floppy-disk', 'Fazer cópia de segurança', 'backup'],
                   ['fa-clock-rotate-left', 'Restaurar cópia de segurança', 'restaurar'],
+<<<<<<< HEAD
+=======
+                  ['fa-calculator', 'Configuração de custos', 'custos'],
+>>>>>>> 6aba7f0 (a)
                   ['fa-key', 'Alterar senha', 'senha'],
                   ['fa-circle-info', 'Acerca da aplicação', 'acerca']
                 ].map(([icone, texto, acao], i) => (
@@ -1472,6 +2304,12 @@ export default function App() {
                       else if (acao === 'senha') {
                         setMenuOpen(false)
                         setAlterarSenhaOpen(true)
+<<<<<<< HEAD
+=======
+                      } else if (acao === 'custos') {
+                        setMenuOpen(false)
+                        setConfigCustosOpen(true)
+>>>>>>> 6aba7f0 (a)
                       } else abrirAcerca()
                     }}
                     className="w-full flex items-center gap-3 px-4 py-2.5 text-left text-[15px] text-slate-700 hover:bg-slate-100 focus:bg-slate-100 outline-none"
@@ -1484,12 +2322,36 @@ export default function App() {
             </>
           )}
         </div>
+        {/* Onde estão os dados: sempre visível (evita trabalhar sem querer noutra base de dados) */}
+        {infoDados && (
+          <button
+            onClick={() => window.api.abrirPastaDados()}
+            title={`${MODOS_DADOS[infoDados.modo] || infoDados.modo}\n${infoDados.pastaDados}\n(clique para abrir a pasta)`}
+            className={`flex items-center gap-2 px-3 py-1.5 text-left text-xs border-t ${infoDados.somenteLeitura ? 'bg-danger-50 border-danger-100 text-danger-700' : 'bg-slate-50 border-slate-200 text-slate-500 hover:text-slate-800 hover:bg-slate-100'}`}
+          >
+            <i
+              className={`fa-solid ${infoDados.modo === 'portatil' ? 'fa-hard-drive' : 'fa-desktop'} shrink-0`}
+            ></i>
+            <span className="font-semibold shrink-0">
+              {infoDados.modo === 'portatil'
+                ? 'Portátil'
+                : infoDados.modo === 'instalado'
+                  ? 'Instalado'
+                  : 'Desenvolvimento'}
+              {infoDados.somenteLeitura ? ' (só consulta)' : ''}
+            </span>
+            <span className="truncate min-w-0" dir="rtl">
+              &lrm;{infoDados.pastaDados}
+            </span>
+          </button>
+        )}
       </aside>
 
       {/* ================= MAIN CONTENT ================= */}
       <main className="flex-1 min-w-0 flex flex-col h-full bg-slate-100 relative print:hidden">
         {/* Header Superior */}
         <header className="min-h-16 py-2 border-b border-slate-200 flex items-center px-5 lg:px-8 gap-4 justify-between bg-white shrink-0 print:hidden">
+<<<<<<< HEAD
           <div className="min-w-0">
             <h2 className="text-xl lg:text-2xl font-bold text-slate-900 truncate leading-tight">
               {activeMachine ? activeMachine.nome : 'Nenhuma máquina selecionada'}
@@ -1504,6 +2366,48 @@ export default function App() {
                 'Selecione uma máquina no menu à esquerda'
               )}
             </p>
+=======
+          <div className="flex items-center gap-3 min-w-0">
+            {activeMachine ? (
+              <BotaoMais titulo="Novo registo" onClick={handleAbrirNovoRelatorio} />
+            ) : activeCompany ? (
+              <BotaoMais
+                titulo="Nova máquina"
+                onClick={() => abrirModalMaquina(activeCompany.id)}
+              />
+            ) : (
+              <BotaoMais titulo="Nova empresa" onClick={() => setEmpresaModalOpen(true)} />
+            )}
+            <div className="min-w-0">
+              <h2 className="text-xl lg:text-2xl font-bold text-slate-900 truncate leading-tight">
+                {activeMachine
+                  ? activeMachine.nome
+                  : activeCompany
+                    ? activeCompany.nome
+                    : 'Nenhuma máquina selecionada'}
+              </h2>
+              <p className="text-sm text-slate-500 truncate">
+                {activeMachine ? (
+                  <button
+                    onClick={() => selecionarEmpresa(activeCompany.id)}
+                    className="hover:text-brand-700 hover:underline"
+                    title="Ver os meses desta empresa"
+                  >
+                    <i className="fa-solid fa-building mr-1.5 text-slate-400"></i>
+                    {activeCompany.nome}
+                  </button>
+                ) : activeCompany ? (
+                  <>
+                    <i className="fa-solid fa-building mr-1.5 text-slate-400"></i>Empresa ·{' '}
+                    {activeCompany.maquinas.length}{' '}
+                    {activeCompany.maquinas.length === 1 ? 'máquina' : 'máquinas'}
+                  </>
+                ) : (
+                  'Selecione uma empresa ou máquina no menu à esquerda'
+                )}
+              </p>
+            </div>
+>>>>>>> 6aba7f0 (a)
           </div>
           {activeMachine && (
             <button
@@ -1515,9 +2419,28 @@ export default function App() {
           )}
         </header>
 
+        {infoDados?.somenteLeitura && (
+          <div className="bg-danger-600 text-white text-sm font-semibold px-5 py-2 flex items-center gap-2 shrink-0">
+            <i className="fa-solid fa-lock"></i>
+            Modo só de consulta: o disco não permite escrita. Pode ver os dados, mas nenhuma
+            alteração é gravada.
+          </div>
+        )}
+
         {/* Área de Conteúdo */}
         <div className="flex-1 overflow-y-auto p-5 lg:p-8 print:hidden">
+<<<<<<< HEAD
           {!activeMachine ? (
+=======
+          {!activeMachine && activeCompany ? (
+            <VistaEmpresa
+              empresa={activeCompany}
+              versao={versaoRegistos}
+              onAbrirRegisto={abrirRegistoDaEmpresa}
+              onErro={(m) => mostrarToast(m, 'erro')}
+            />
+          ) : !activeMachine ? (
+>>>>>>> 6aba7f0 (a)
             /* Estado Vazio */
             <div className="h-full flex flex-col items-center justify-center text-center px-4">
               <img src={logoSimbolo} alt="" className="w-24 h-24 mb-5 drop-shadow-sm" />
@@ -1528,7 +2451,11 @@ export default function App() {
               <p className="text-base text-slate-600 max-w-md">
                 {empresas.length === 0
                   ? 'Comece por adicionar a primeira empresa (cliente) no botão «Adicionar Empresa», em baixo à esquerda.'
+<<<<<<< HEAD
                   : 'Escolha uma máquina na lista à esquerda, ou adicione uma nova empresa.'}
+=======
+                  : 'Escolha uma empresa (para ver os meses) ou uma máquina na lista à esquerda.'}
+>>>>>>> 6aba7f0 (a)
               </p>
             </div>
           ) : (
@@ -1579,8 +2506,10 @@ export default function App() {
                   {[
                     ['marca', 'MARCA'],
                     ['modelo', 'MODELO'],
-                    ['serial', 'N/SERIE'],
-                    ['ano_fab', 'AÑO FAB.']
+                    ['serial', 'N.º SÉRIE'],
+                    ['ano_fab', 'ANO FAB.'],
+                    ['cidade', 'CIDADE'],
+                    ['pais', 'PAÍS']
                   ].map(([campo, rotulo]) => (
                     <div key={campo} className="min-w-0">
                       <label className="block text-xs tracking-wider text-slate-400 font-semibold mb-1">
@@ -1599,22 +2528,26 @@ export default function App() {
 
                 {/* BLOCO 2: ALIMENTAÇÃO */}
                 <h3 className="text-center font-bold tracking-[0.2em] text-slate-300 mt-6 mb-6 border-b border-slate-600 pb-2 text-sm @lg:text-base">
+<<<<<<< HEAD
                   CARACTERÍSTICAS DE ALIMENTACIÓN
+=======
+                  CARACTERÍSTICAS DE ALIMENTAÇÃO
+>>>>>>> 6aba7f0 (a)
                 </h3>
 
                 <div className="grid grid-cols-1 @3xl:grid-cols-3 gap-6 pb-2">
                   {[
                     {
-                      titulo: 'Eléctricas',
+                      titulo: 'Elétricas',
                       campos: [
                         ['elet_v', 'V'],
                         ['elet_hz', 'Hz'],
-                        ['elet_kw', 'Kw']
+                        ['elet_kw', 'kW']
                       ]
                     },
-                    { titulo: 'Neumáticas (Aire)', campos: [['pneu_kgcm2', 'Kg/cm²']] },
+                    { titulo: 'Pneumáticas (Ar)', campos: [['pneu_kgcm2', 'Kg/cm²']] },
                     {
-                      titulo: 'Hidráulicas (Agua)',
+                      titulo: 'Hidráulicas (Água)',
                       campos: [
                         ['hidr_kgcm2', 'Kg/cm²'],
                         ['hidr_lh', 'l/h']
@@ -1720,7 +2653,12 @@ export default function App() {
                                           <span className="tabular-nums text-slate-500 mr-2 shrink-0">
                                             {formatarData(rel.data)}
                                           </span>
+<<<<<<< HEAD
                                           <span className="truncate">{rel.titulo}</span>
+=======
+                                          <span className="truncate mr-2">{rel.titulo}</span>
+                                          <BadgeTipo tipo={rel.tipo_manutencao} />
+>>>>>>> 6aba7f0 (a)
                                         </button>
                                         <button
                                           onClick={() => handleImprimirDaLista(rel)}
@@ -1891,7 +2829,11 @@ export default function App() {
             const tecla = e.key.toLowerCase()
             if ((e.ctrlKey || e.metaKey) && tecla === 's') {
               e.preventDefault()
+<<<<<<< HEAD
               if (folhaEditavel) handleSaveRelatorio()
+=======
+              if (folhaEditavel) handleSaveRelatorio(false)
+>>>>>>> 6aba7f0 (a)
             } else if ((e.ctrlKey || e.metaKey) && tecla === 'p') {
               e.preventDefault()
               handleImprimir()
@@ -1902,15 +2844,19 @@ export default function App() {
           }}
         >
           {/* Barra Superior Escura */}
-          <div className="fixed top-0 left-0 right-0 bg-gray-800 text-white p-3 flex justify-between items-center gap-2 shadow-lg z-[90] print:hidden">
+          <div className="fixed top-0 left-0 right-0 bg-slate-900/95 backdrop-blur text-white px-4 py-3 flex justify-between items-center gap-2 border-b border-white/10 shadow-lg z-[90] print:hidden">
             <div className="flex items-center min-w-0">
               <button
                 onClick={handleFecharA4}
-                className="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded text-sm mr-4 transition shrink-0"
+                className="bg-white/10 hover:bg-white/20 px-4 py-2 rounded-md text-sm font-medium mr-4 transition shrink-0"
               >
                 <i className="fa-solid fa-arrow-left mr-2"></i>Voltar
               </button>
+<<<<<<< HEAD
               <span className="hidden md:inline text-sm text-gray-300 font-semibold truncate">
+=======
+              <span className="hidden md:inline text-sm text-slate-300 font-semibold truncate">
+>>>>>>> 6aba7f0 (a)
                 {modoFolha === 'novo'
                   ? 'Novo Registo'
                   : modoFolha === 'edicao'
@@ -1923,7 +2869,11 @@ export default function App() {
                 <button
                   onClick={handleEditarRegisto}
                   title="Alterar este registo (pede a senha)"
+<<<<<<< HEAD
                   className="bg-amber-600 hover:bg-amber-500 px-4 py-2 rounded text-sm font-bold shadow transition"
+=======
+                  className="bg-accent-500 hover:bg-accent-400 text-slate-900 px-4 py-2 rounded-md text-sm font-semibold shadow-sm transition"
+>>>>>>> 6aba7f0 (a)
                 >
                   <i className="fa-solid fa-pen mr-2"></i>Editar
                 </button>
@@ -1932,25 +2882,52 @@ export default function App() {
                 onClick={handleImprimir}
                 disabled={!dataRegisto}
                 title="Imprimir (Ctrl+P)"
+<<<<<<< HEAD
                 className="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded text-sm font-bold shadow transition disabled:opacity-40 disabled:cursor-not-allowed"
+=======
+                className="bg-white/10 hover:bg-white/20 ring-1 ring-inset ring-white/15 px-4 py-2 rounded-md text-sm font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed"
+>>>>>>> 6aba7f0 (a)
               >
                 <i className="fa-solid fa-print mr-2"></i>Imprimir
               </button>
               <button
                 onClick={handleExportarPDF}
                 disabled={!dataRegisto}
+<<<<<<< HEAD
                 className="bg-red-600 hover:bg-red-500 px-4 py-2 rounded text-sm font-bold shadow transition disabled:opacity-40 disabled:cursor-not-allowed"
+=======
+                className="bg-white/10 hover:bg-white/20 ring-1 ring-inset ring-white/15 px-4 py-2 rounded-md text-sm font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed"
+>>>>>>> 6aba7f0 (a)
               >
                 <i className="fa-solid fa-file-pdf mr-2"></i>Exportar PDF
               </button>
               {folhaEditavel && (
                 <button
+<<<<<<< HEAD
                   onClick={handleSaveRelatorio}
                   disabled={!dataRegisto}
                   title="Guardar (Ctrl+S)"
                   className="bg-green-600 hover:bg-green-500 px-4 lg:px-6 py-2 rounded text-sm font-bold shadow transition disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   <i className="fa-solid fa-floppy-disk mr-2"></i>Guardar
+=======
+                  onClick={() => handleSaveRelatorio(true)}
+                  disabled={!dataRegisto}
+                  title="Grava e continua no registo"
+                  className="bg-white/10 hover:bg-white/20 ring-1 ring-inset ring-white/15 px-4 py-2 rounded-md text-sm font-semibold transition disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <i className="fa-solid fa-check mr-2"></i>Aplicar
+                </button>
+              )}
+              {folhaEditavel && (
+                <button
+                  onClick={() => handleSaveRelatorio(false)}
+                  disabled={!dataRegisto}
+                  title="Grava e fecha (Ctrl+S)"
+                  className="bg-brand-500 hover:bg-brand-400 px-4 lg:px-6 py-2 rounded-md text-sm font-semibold shadow-sm transition disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <i className="fa-solid fa-floppy-disk mr-2"></i>Gravar
+>>>>>>> 6aba7f0 (a)
                 </button>
               )}
             </div>
@@ -1963,7 +2940,73 @@ export default function App() {
             reais (com divs em display:table o texto ficava por baixo do rodapé).
             Em ecrã as partes da tabela são mostradas como blocos/flex normais.
           */}
+<<<<<<< HEAD
           <div className="folha-a4-pagina folha-original w-[210mm] max-w-[calc(100%-1rem)] min-h-[297mm] bg-white shadow-2xl mx-auto mt-20 flex flex-col p-[12mm] lg:p-[20mm] relative">
+=======
+          {/* Dados do registo e documentos — só no ecrã, não sai na impressão */}
+          <details
+            open
+            className="print:hidden w-[210mm] max-w-[calc(100%-1rem)] mx-auto mt-20 mb-4 bg-white rounded-lg shadow-xl group/docs"
+          >
+            <summary className="flex items-center gap-3 px-5 py-3 cursor-pointer list-none [&::-webkit-details-marker]:hidden select-none">
+              <i className="fa-solid fa-chevron-right text-xs text-slate-400 transition-transform group-open/docs:rotate-90"></i>
+              <span className="font-bold text-slate-900">
+                <i className="fa-solid fa-paperclip mr-2 text-brand-600"></i>Documentos e custos
+              </span>
+              {modoFolha === 'leitura' && (
+                <span className="ml-auto flex items-center gap-3 text-sm text-slate-600 min-w-0">
+                  <span className="truncate">
+                    <i className="fa-solid fa-user-gear mr-1.5 text-slate-400"></i>
+                    {tecnicoRegisto || 'Técnico não indicado'}
+                  </span>
+                  <BadgeTipo tipo={tipoRegisto} />
+                </span>
+              )}
+            </summary>
+            <div className="px-5 pb-4 pt-1 border-t border-slate-100">
+              {folhaEditavel && (
+                <div className="grid sm:grid-cols-2 gap-3 mb-4 mt-3">
+                  <label className="block">
+                    <span className="block text-xs font-semibold text-slate-500 mb-1">Técnico</span>
+                    <input
+                      value={tecnicoRegisto}
+                      onChange={(e) => setTecnicoRegisto(e.target.value)}
+                      placeholder="Nome do técnico"
+                      className={`${INPUT} py-2`}
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="block text-xs font-semibold text-slate-500 mb-1">
+                      Tipo de manutenção
+                    </span>
+                    <select
+                      value={tipoRegisto}
+                      onChange={(e) => setTipoRegisto(e.target.value)}
+                      className={`${INPUT} py-2`}
+                    >
+                      {[
+                        ...TIPOS_MANUTENCAO,
+                        ...(TIPOS_MANUTENCAO.includes(tipoRegisto) ? [] : [tipoRegisto])
+                      ].map((t) => (
+                        <option key={t}>{t}</option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+              )}
+              <div className={folhaEditavel ? '' : 'mt-3'}>
+                <SecaoDocumentos
+                  registoId={relatorioAtual.id}
+                  versao={versaoRegistos}
+                  pedirSenha={pedirSenha}
+                  mostrarToast={mostrarToast}
+                />
+              </div>
+            </div>
+          </details>
+
+          <div className="folha-a4-pagina folha-original w-[210mm] max-w-[calc(100%-1rem)] min-h-[297mm] bg-white shadow-2xl mx-auto flex flex-col p-[12mm] lg:p-[20mm] relative">
+>>>>>>> 6aba7f0 (a)
             {/* Data da intervenção (obrigatória) — controlo de ecrã, não sai na impressão */}
             {folhaEditavel && (
               <div
@@ -2188,6 +3231,8 @@ export default function App() {
             </table>
 
             <RodapeFolha />
+<<<<<<< HEAD
+=======
           </div>
         </div>
       )}
@@ -2211,18 +3256,80 @@ export default function App() {
         />
       )}
 
+      {isConfigCustosOpen && (
+        <ModalConfigCustos
+          onFechar={() => setConfigCustosOpen(false)}
+          onSucesso={() => {
+            setConfigCustosOpen(false)
+            mostrarToast('Configuração de custos guardada', 'sucesso')
+          }}
+        />
+      )}
+
       <ConfirmModal pedido={pedidoConfirmacao} onResponder={responderConfirmacao} />
 
+      {/* A trabalhar (cópia de segurança / restauro) */}
+      {ocupado && (
+        <div className="fixed inset-0 z-[120] modal-backdrop flex items-center justify-center p-4 print:hidden">
+          <div className="bg-white rounded-xl shadow-2xl px-6 py-5 flex items-center gap-4 animar-entrada">
+            <i className="fa-solid fa-spinner fa-spin text-2xl text-brand-600"></i>
+            <div>
+              <p className="font-semibold text-slate-900">{ocupado}</p>
+              <p className="text-sm text-slate-500">
+                Pode demorar alguns minutos se houver muitos documentos.
+              </p>
+            </div>
+>>>>>>> 6aba7f0 (a)
+          </div>
+        </div>
+      )}
+
+<<<<<<< HEAD
+      {/* Folha só para impressão (ícone «Imprimir» da lista de registos) */}
+      {relImprimir && !isA4ModalOpen && (
+        <FolhaImpressao rel={relImprimir} subtitulo={configSubtitulo} />
+      )}
+
+      {pedidoSenha && (
+        <ModalSenha key={pedidoSenha.id} pedido={pedidoSenha} onConcluir={concluirPedidoSenha} />
+      )}
+
+      {isAlterarSenhaOpen && (
+        <ModalAlterarSenha
+          onFechar={() => setAlterarSenhaOpen(false)}
+          onSucesso={() => {
+            setAlterarSenhaOpen(false)
+            mostrarToast('Senha alterada', 'sucesso')
+          }}
+        />
+      )}
+
+      <ConfirmModal pedido={pedidoConfirmacao} onResponder={responderConfirmacao} />
+
+=======
+>>>>>>> 6aba7f0 (a)
       {/* ================= TOAST (NOTIFICAÇÃO) ================= */}
       {toast && (
         <div
           role="status"
           className={`fixed bottom-6 right-6 z-[110] max-w-[min(32rem,calc(100%-3rem))] px-4 py-3 rounded-lg shadow-xl text-white text-[15px] font-semibold flex items-center gap-3 animar-entrada print:hidden ${
+<<<<<<< HEAD
             toast.tipo === 'erro' ? 'bg-danger-600' : 'bg-brand-900'
           }`}
         >
           <i
             className={`fa-solid ${toast.tipo === 'erro' ? 'fa-triangle-exclamation' : 'fa-circle-check text-ok-400'}`}
+=======
+            toast.tipo === 'erro'
+              ? 'bg-danger-600'
+              : toast.tipo === 'aviso'
+                ? 'bg-warn-600'
+                : 'bg-brand-900'
+          }`}
+        >
+          <i
+            className={`fa-solid ${toast.tipo === 'sucesso' ? 'fa-circle-check text-ok-400' : 'fa-triangle-exclamation'}`}
+>>>>>>> 6aba7f0 (a)
           ></i>
           <span className="break-words min-w-0">{toast.mensagem}</span>
         </div>

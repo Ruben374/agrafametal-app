@@ -30,8 +30,8 @@ Os dois ficheiros aparecem na pasta `dist\`:
 
 | Ficheiro                          | Para quê                                                          |
 | --------------------------------- | ----------------------------------------------------------------- |
-| `Agrafametal-1.1.0-setup.exe`     | Instalador: instala num PC (dados ficam nesse PC)                 |
-| `Agrafametal-1.1.0-portable.exe`  | Versão portátil: copia-se para o disco externo (dados no disco)   |
+| `Agrafametal-1.2.0-setup.exe`     | Instalador: instala num PC (dados ficam nesse PC)                 |
+| `Agrafametal-1.2.0-portable.exe`  | Versão portátil: copia-se para o disco externo (dados no disco)   |
 
 A versão vem do campo `version` do `package.json`.
 

@@ -21,8 +21,26 @@ const api = {
 
   // Relatórios
   getRelatorios: (maquinaId) => ipcRenderer.invoke('db:getRelatorios', maquinaId),
+  getRelatorio: (id) => ipcRenderer.invoke('db:getRelatorio', id),
   saveRelatorio: (maquinaId, dados) => ipcRenderer.invoke('db:saveRelatorio', maquinaId, dados),
   deleteRelatorio: (id, senha) => ipcRenderer.invoke('db:deleteRelatorio', id, senha),
+
+  // Vista da empresa (meses do ano)
+  getResumoMensal: (empresaId, ano) => ipcRenderer.invoke('db:getResumoMensal', empresaId, ano),
+  getRegistosMes: (empresaId, ano, mes) =>
+    ipcRenderer.invoke('db:getRegistosMes', empresaId, ano, mes),
+
+  // Documentos de cada registo (pasta no disco) e folha de custos
+  listarDocumentos: (id) => ipcRenderer.invoke('docs:listar', id),
+  adicionarDocumentos: (id) => ipcRenderer.invoke('docs:adicionar', id),
+  abrirDocumento: (id, nome) => ipcRenderer.invoke('docs:abrir', id, nome),
+  abrirPastaRegisto: (id) => ipcRenderer.invoke('docs:abrirPasta', id),
+  removerDocumento: (id, nome, senha) => ipcRenderer.invoke('docs:remover', id, nome, senha),
+  folhaCustos: (id) => ipcRenderer.invoke('docs:folhaCustos', id),
+
+  // Configuração de custos
+  getConfigCustos: () => ipcRenderer.invoke('custos:get'),
+  setConfigCustos: (valores, senha) => ipcRenderer.invoke('custos:set', valores, senha),
 
   // Senha (alterações e eliminações)
   desbloquear: (tipo, id, senha) => ipcRenderer.invoke('auth:desbloquear', tipo, id, senha),
